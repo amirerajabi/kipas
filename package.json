@@ -1,0 +1,18 @@
+{
+  "name": "kipas",
+  "private": true,
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Kipas: a modern, friendly offline password manager (Electron + React), in the spirit of KeePass",
+  "scripts": {
+    "setup": "npm --prefix ui install && npm --prefix desktop install",
+    "dev": "node scripts/run.mjs browser",
+    "dev:desktop": "node scripts/run.mjs desktop-dev",
+    "build": "npm --prefix ui run build && npm --prefix desktop run build",
+    "start": "npm run build && node scripts/run.mjs desktop",
+    "dist": "npm run build && npm --prefix desktop run dist",
+    "test": "npm --prefix ui test",
+    "icons": "node desktop/build/make-icon.mjs",
+    "typecheck": "npm --prefix ui run typecheck && npm --prefix desktop run typecheck"
+  }
+}

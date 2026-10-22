@@ -1,0 +1,47 @@
+appId: com.kipas.app
+productName: Kipas
+copyright: Kipas contributors
+directories:
+  output: release
+  buildResources: build
+# In-app updates (src/main/updater.ts, electron-updater). Builds still run with `--publish never`; this config makes
+# electron-builder write resources/app-update.yml into the app and latest.yml / latest-mac.yml / latest-linux.yml plus
+# the .blockmap files next to the installers, which .github/workflows/release.yml uploads to the v<version> release.
+publish:
+  provider: github
+  owner: amirerajabi
+  repo: kipas
+  releaseType: release
+# Package the Electron already installed in node_modules instead of downloading it again from GitHub.
+electronDist: node_modules/electron/dist
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: ../ui/dist
+    to: ui
+  - from: build/icon.ico
+    to: icon.ico
+  - from: build/icon.png
+    to: icon.png
+# No spaces in file names: GitHub renames release assets that contain them.
+win:
+  target: nsis
+  icon: build/icon.ico
+  artifactName: ${productName}-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+mac:
+  icon: build/icon.png
+  category: public.app-category.productivity
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+  # Unsigned (ad-hoc) unless Developer ID secrets are configured.
+  identity: null
+linux:
+  target: AppImage
+  icon: build/icon.png
+  category: Utility
+  artifactName: ${productName}-${version}-${arch}.${ext}
