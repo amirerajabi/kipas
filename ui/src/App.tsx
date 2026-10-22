@@ -11,6 +11,7 @@ import { DetailsPane } from './components/DetailsPane/DetailsPane';
 import { EntryEditor } from './components/EntryEditor/EntryEditor';
 import { EntryList } from './components/EntryList/EntryList';
 import { GeneratorDialog } from './components/Generator/GeneratorDialog';
+import { KeePassImportDialog } from './components/KeePassImport/KeePassImportDialog';
 import { Dock } from './components/layout/Dock';
 import { TopBar } from './components/layout/TopBar';
 import { CreateVaultDialog } from './components/LockScreen/CreateVaultDialog';
@@ -58,6 +59,7 @@ export default function App() {
       <SettingsDialog />
       <ChangePasswordDialog />
       <GeneratorDialog />
+      <KeePassImportDialog />
       <CommandPalette />
       <ShortcutSheet />
       <PromptDialog />

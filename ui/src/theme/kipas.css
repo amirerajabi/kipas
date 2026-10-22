@@ -781,3 +781,36 @@ label.notice input {
   background: var(--accent);
   transition: width 300ms linear;
 }
+
+/* ---------- KeePass import ---------- */
+.import-intro {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.file-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--bg-sunken);
+}
+.import-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--text-sm);
+}
+.import-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--strength-track);
+  overflow: hidden;
+}
+.import-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms linear;
+}

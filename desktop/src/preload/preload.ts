@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('kipas', {
   statVault: (path: string) => ipcRenderer.invoke(CH.statVault, String(path)),
   saveTextFile: (name: string, text: string, filters: TextFileFilter[]): Promise<string | null> => ipcRenderer.invoke(CH.saveTextFile, String(name), String(text), filters),
   openTextFile: (filters: TextFileFilter[]) => ipcRenderer.invoke(CH.openTextFile, filters),
+  openBinaryFile: (filters: TextFileFilter[]) => ipcRenderer.invoke(CH.openBinaryFile, filters),
   copySecret: (text: string, clearAfterMs: number) => ipcRenderer.send(CH.copySecret, String(text), Number(clearAfterMs)),
   clearClipboard: () => ipcRenderer.send(CH.clearClipboard),
   openExternal: (url: string) => ipcRenderer.send(CH.openExternal, String(url)),

@@ -16,6 +16,8 @@ device**. No account, no cloud, no tracking. Electron + React, with the same she
 - **Safe clipboard**: copied secrets are wiped after 20 seconds (configurable), only if still on the clipboard.
 - **Auto-lock** after idle time, when the computer locks or sleeps, and optionally on minimize.
 - **Password history** per entry, so an accidental change can be undone.
+- **Import KeePass databases** (`.kdbx`, KDBX 3.1 and 4.x from KeePass 2, KeePassXC, KeeWeb, Strongbox) directly, with
+  their password and key file: groups, custom fields, two-factor secrets, password history and the recycle bin come along.
 - **Import** CSV from KeePass, KeePassXC, Bitwarden, 1Password, LastPass, Chrome, Edge, Firefox. **Export** to CSV.
 - **Keyboard first**: command palette (Ctrl+K, Ctrl+Enter copies a result's password), KeePass shortcuts (Ctrl+B user
   name, Ctrl+C password, Ctrl+U open site), drag items onto groups, light and dark themes.
@@ -45,6 +47,7 @@ npm run dist         # Windows installer into desktop/release/
 | Path | What |
 | --- | --- |
 | `ui/src/vault/` | The vault core, DOM-free: `crypto.ts`, `model.ts`, `totp.ts`, `generator.ts`, `strength.ts`, `csv.ts`, `health.ts`. |
+| `ui/src/vault/keepass/` | KeePass import: `kdbx.ts` (KDBX 3/4 reader), `argon2.ts` (Argon2 + BLAKE2b), `streams.ts` (ChaCha20, Salsa20), `xml.ts`, `import.ts`. |
 | `ui/src/store/` | zustand stores: `vault` (open vault, saving), `list` (filter, search, selection), `ui`, `settings`. |
 | `ui/src/app/commands.ts` | The command registry: toolbar, menus, palette and shortcuts all read it. |
 | `ui/src/platform.ts` | The bridge to Electron (`window.kipas`), with a localStorage fallback in a browser. |

@@ -2,6 +2,10 @@
 
 ## Released
 
+- **v1.1.0** (2026-10-22): import from KeePass. Notes: [release-notes/v1.1.0.md](release-notes/v1.1.0.md).
+  - **Import from KeePass** (`.kdbx`, KDBX 3.1 and 4.x; AES-KDF, Argon2d/id; AES or ChaCha20; key files). Tested on files
+    KeePass 2.61 wrote (`ui/test/fixtures`) and through the dialog in the browser preview. Twofish databases and KeePass
+    1.x `.kdb` files are refused with a message; attachments are counted, not imported.
 - **v1.0.0** (2026-10-22): first public release. Notes: [release-notes/v1.0.0.md](release-notes/v1.0.0.md).
 
 ## On `main`, not released yet
@@ -22,8 +26,10 @@ one release to the next.
 
 ## Ideas / open work
 
-- Argon2id key derivation (needs a WASM build or Node's `crypto.argon2`), as vault format version 2.
-- KDBX (KeePass) import, which needs Argon2 and ChaCha20/Salsa20.
+- Argon2id key derivation for Kipas's own vaults, as vault format version 2 (`keepass/argon2.ts` can provide it).
+- Attachments (KeePass imports carry them; Kipas has nowhere to keep them yet).
+- Argon2 runs on the UI thread (about 4 s for KeePass's default 64 MiB; KeePassXC files tuned to 1 s natively can take
+  much longer). A Web Worker or WASM would keep the window responsive.
 - Detect a vault changed on disk by another device (sync conflicts) before saving over it.
 - Browser extension for autofill (Grabbit's extension setup is a template).
 - Exclude copied secrets from Windows clipboard history.

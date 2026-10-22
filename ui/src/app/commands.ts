@@ -3,6 +3,7 @@ import {
   Copy,
   CreditCard,
   Download,
+  FileLock2,
   FilePlus2,
   FolderOpen,
   FolderPlus,
@@ -181,6 +182,7 @@ export const COMMANDS: Command[] = [
     run: () => getPlatform().revealFile(useVault.getState().path!),
   },
   { id: 'vault.changePassword', label: 'Change master password…', icon: ShieldCheck, disabled: locked, run: () => useUi.getState().set({ changePasswordOpen: true }) },
+  { id: 'vault.importKeePass', label: 'Import from KeePass…', icon: FileLock2, disabled: locked, run: () => useUi.getState().set({ keepassImportOpen: true }) },
   { id: 'vault.import', label: 'Import from CSV…', icon: Download, disabled: locked, run: importFromCsv },
   { id: 'vault.export', label: 'Export to CSV…', icon: Upload, disabled: locked, run: exportToCsv },
   { id: 'view.palette', label: 'Command palette', icon: Search, shortcut: 'Mod+K', palette: false, disabled: locked, run: () => useUi.getState().set({ paletteOpen: true }) },
@@ -216,7 +218,7 @@ export function runCommand(id: string): void {
 
 function modalOpen(): boolean {
   const u = useUi.getState();
-  return !!(u.editor || u.generator || u.createVaultOpen || u.settingsOpen || u.changePasswordOpen || u.paletteOpen || u.shortcutsOpen || u.confirm || u.prompt);
+  return !!(u.editor || u.generator || u.createVaultOpen || u.keepassImportOpen || u.settingsOpen || u.changePasswordOpen || u.paletteOpen || u.shortcutsOpen || u.confirm || u.prompt);
 }
 
 /**

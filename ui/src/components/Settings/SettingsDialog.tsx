@@ -1,4 +1,4 @@
-import { Database, Download, FolderOpen, Info, KeyRound, LoaderCircle, Lock, RefreshCw, Settings, ShieldCheck, SlidersHorizontal, Upload } from 'lucide-react';
+import { Database, Download, FileLock2, FolderOpen, Info, KeyRound, LoaderCircle, Lock, RefreshCw, Settings, ShieldCheck, SlidersHorizontal, Upload } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { exportToCsv, importFromCsv } from '../../app/actions';
 import { runCommand } from '../../app/commands';
@@ -170,6 +170,16 @@ function Data() {
       </div>
       <div className="settings-section">
         <h3>Move passwords in or out</h3>
+        <div className="info-card">
+          <FileLock2 size={18} className="text-accent" />
+          <div className="flex-1">
+            <strong>Import from KeePass</strong>
+            <p className="muted">Open a .kdbx database from KeePass, KeePassXC, KeeWeb or Strongbox directly, with its password and key file.</p>
+          </div>
+          <button className="btn" disabled={!data} onClick={() => runCommand('vault.importKeePass')}>
+            Import…
+          </button>
+        </div>
         <div className="info-card">
           <Download size={18} className="text-accent" />
           <div className="flex-1">

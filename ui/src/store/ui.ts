@@ -57,6 +57,7 @@ interface UiState {
   editor: EditorState | null;
   generator: GeneratorState | null;
   createVaultOpen: boolean;
+  keepassImportOpen: boolean;
   settingsOpen: SettingsSection | null;
   changePasswordOpen: boolean;
   paletteOpen: boolean;
@@ -68,7 +69,7 @@ interface UiState {
   prompt: PromptState | null;
   toasts: Toast[];
   setLayout(p: Partial<Layout>): void;
-  set(p: Partial<Pick<UiState, 'editor' | 'generator' | 'createVaultOpen' | 'settingsOpen' | 'changePasswordOpen' | 'paletteOpen' | 'shortcutsOpen' | 'clipboard' | 'revealed'>>): void;
+  set(p: Partial<Pick<UiState, 'editor' | 'generator' | 'createVaultOpen' | 'keepassImportOpen' | 'settingsOpen' | 'changePasswordOpen' | 'paletteOpen' | 'shortcutsOpen' | 'clipboard' | 'revealed'>>): void;
   askConfirm(c: Omit<ConfirmState, 'resolve'>): Promise<{ ok: boolean; checked: boolean }>;
   resolveConfirm(ok: boolean, checked?: boolean): void;
   askText(p: Omit<PromptState, 'resolve'>): Promise<string | null>;
@@ -101,6 +102,7 @@ export const useUi = create<UiState>((set, get) => ({
   editor: null,
   generator: null,
   createVaultOpen: false,
+  keepassImportOpen: false,
   settingsOpen: null,
   changePasswordOpen: false,
   paletteOpen: false,
@@ -148,6 +150,6 @@ export const useUi = create<UiState>((set, get) => ({
   closeAll() {
     get().resolveConfirm(false);
     get().resolvePrompt(null);
-    set({ editor: null, generator: null, settingsOpen: null, changePasswordOpen: false, paletteOpen: false, shortcutsOpen: false, revealed: new Set() });
+    set({ editor: null, generator: null, keepassImportOpen: false, settingsOpen: null, changePasswordOpen: false, paletteOpen: false, shortcutsOpen: false, revealed: new Set() });
   },
 }));

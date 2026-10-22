@@ -29,7 +29,9 @@ A change is done when `npm run typecheck`, `npm test` and `npm run build` pass. 
 - **No network** except the updater (desktop main process, GitHub release metadata only, can be turned off in
   Settings → Updates). No favicon fetching or analytics. The renderer's production CSP has `connect-src 'none'`; keep it.
 - Releasing: read [.claude/rules/release.md](.claude/rules/release.md) and follow `.claude/skills/release/SKILL.md`.
-- Every behaviour change in `ui/src/vault/` gets a test in `ui/test/vault.test.ts`.
+- Every behaviour change in `ui/src/vault/` gets a test in `ui/test/vault.test.ts` (KeePass import: `ui/test/keepass.test.ts`).
+- The KeePass fixtures in `ui/test/fixtures/` are written by real KeePass 2 via `scripts/make-kdbx-fixtures.ps1` (run it with
+  Windows PowerShell 5.1). Never replace them with files our own code wrote; that would only test us against ourselves.
 - Every user action is a command in `ui/src/app/commands.ts`. Colours, sizes and weights only via
   `ui/src/theme/tokens.css` (light and dark values). Reuse `components/common` (`Dialog`, `Menu`, `Toasts`, `SecretInput`).
 - The desktop bridge is `desktop/src/preload/preload.ts` (`window.kipas`); main validates every value

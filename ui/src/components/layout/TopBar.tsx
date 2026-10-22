@@ -10,7 +10,7 @@ import { showMenuBelow, type MenuItem } from '../common/Menu';
 import { BrandMark, Kbd } from '../common/visuals';
 
 const MENU: { label: string; ids: (string | '-')[] }[] = [
-  { label: 'Vault', ids: ['vault.create', 'vault.open', 'vault.reveal', '-', 'vault.changePassword', 'vault.import', 'vault.export', '-', 'vault.lock'] },
+  { label: 'Vault', ids: ['vault.create', 'vault.open', 'vault.reveal', '-', 'vault.changePassword', 'vault.importKeePass', 'vault.import', 'vault.export', '-', 'vault.lock'] },
   { label: 'Items', ids: ['entry.new', 'entry.newCard', 'entry.newNote', 'entry.newWifi', '-', 'entry.edit', 'entry.duplicate', 'entry.favorite', 'entry.delete', 'entry.restore', '-', 'group.new', 'trash.empty'] },
   { label: 'Copy', ids: ['entry.copyUsername', 'entry.copyPassword', 'entry.copyTotp', 'entry.openUrl'] },
   { label: 'View', ids: ['view.toggleSidebar', 'view.toggleDetails', 'view.toggleTheme', '-', 'view.palette', 'view.shortcuts', '-', 'app.checkUpdates'] },

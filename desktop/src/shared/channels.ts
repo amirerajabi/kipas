@@ -8,6 +8,7 @@ export const CH = {
   statVault: 'kipas:stat-vault',
   saveTextFile: 'kipas:save-text-file',
   openTextFile: 'kipas:open-text-file',
+  openBinaryFile: 'kipas:open-binary-file',
   copySecret: 'kipas:copy-secret',
   clearClipboard: 'kipas:clear-clipboard',
   openExternal: 'kipas:open-external',

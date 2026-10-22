@@ -152,6 +152,16 @@ function installIpc(): void {
     if ((await fs.stat(file)).size > MAX_TEXT_FILE) throw new Error('The file is too large.');
     return { name: path.basename(file), text: await fs.readFile(file, 'utf8') };
   });
+  // KeePass databases and key files. No filters means any file (key files can be anything).
+  ipcMain.handle(CH.openBinaryFile, async (e, f: unknown) => {
+    const opts: Electron.OpenDialogOptions = { properties: ['openFile'], filters: filters(f) };
+    const w = owner(e);
+    const r = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+    const file = r.canceled ? undefined : r.filePaths[0];
+    if (!file) return null;
+    if ((await fs.stat(file)).size > MAX_TEXT_FILE) throw new Error('The file is too large.');
+    return { name: path.basename(file), bytes: new Uint8Array(await fs.readFile(file)) };
+  });
 
   ipcMain.on(CH.copySecret, (_e, text: unknown, clearAfterMs: unknown) => {
     const value = String(text ?? '');

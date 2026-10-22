@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowUp, Download, KeyRound, Plus, SearchX, Star, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Download, FileLock2, KeyRound, Plus, SearchX, Star, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { importFromCsv, newEntry } from '../../app/actions';
 import { runCommand } from '../../app/commands';
+import { useUi } from '../../store/ui';
 import { formatAge } from '../../lib/format';
 import { useList, visibleEntries, type SortKey } from '../../store/list';
 import { useSettings } from '../../store/settings';
@@ -212,13 +213,16 @@ function Empty({ totalLive }: { totalLive: number }) {
           <KeyRound size={30} />
         </div>
         <h2>Your vault is ready</h2>
-        <p className="muted">Add your first password, or bring them over from another password manager or your browser.</p>
+        <p className="muted">Add your first password, or bring them over from KeePass, another password manager or your browser.</p>
         <div className="empty-actions">
           <button className="btn btn-primary" onClick={() => newEntry('login')}>
             <Plus size={16} /> Add a login
           </button>
+          <button className="btn" onClick={() => useUi.getState().set({ keepassImportOpen: true })}>
+            <FileLock2 size={16} /> Import from KeePass
+          </button>
           <button className="btn" onClick={() => void importFromCsv()}>
-            <Download size={16} /> Import from CSV
+            <Download size={16} /> Import CSV
           </button>
         </div>
         <ul className="empty-tips muted">

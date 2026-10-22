@@ -19,6 +19,8 @@ export interface DesktopBridge {
   statVault(path: string): Promise<VaultFileInfo | null>;
   saveTextFile(defaultName: string, text: string, filters: TextFileFilter[]): Promise<string | null>;
   openTextFile(filters: TextFileFilter[]): Promise<{ name: string; text: string } | null>;
+  /** No filters: any file. */
+  openBinaryFile(filters: TextFileFilter[]): Promise<{ name: string; bytes: Uint8Array } | null>;
   /** Put a secret on the clipboard and wipe it after `clearAfterMs` (0 = keep), unless something else was copied since. */
   copySecret(text: string, clearAfterMs: number): void;
   /** Wipe the clipboard if it still holds the last secret we copied. */
@@ -122,6 +124,10 @@ function browserPlatform(): Platform {
     async openTextFile(filters) {
       const file = await pickFile(filters.flatMap((f) => f.extensions.map((e) => `.${e}`)).join(','));
       return file ? { name: file.name, text: await file.text() } : null;
+    },
+    async openBinaryFile(filters) {
+      const file = await pickFile(filters.flatMap((f) => f.extensions.map((e) => `.${e}`)).join(','));
+      return file ? { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) } : null;
     },
     copySecret(text, clearAfterMs) {
       void navigator.clipboard.writeText(text).catch(noop);
