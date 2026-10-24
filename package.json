@@ -2,7 +2,7 @@
   "name": "kipas",
   "private": true,
   "license": "MIT",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Kipas: a modern, friendly offline password manager (Electron + React), in the spirit of KeePass",
   "scripts": {
     "setup": "npm --prefix ui install && npm --prefix desktop install",

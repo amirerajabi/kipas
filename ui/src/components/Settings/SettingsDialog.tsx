@@ -78,7 +78,15 @@ function General() {
             ))}
           </div>
         </Field>
-        <Toggle checked={s.showPasswordColumn} onChange={(v) => save({ showPasswordColumn: v })} label="Show a password column in the list" hint="Masked, with a strength dot." />
+      </div>
+      <div className="settings-section">
+        <h3>Quick access</h3>
+        <Toggle
+          checked={s.quickAccess}
+          onChange={(v) => save({ quickAccess: v })}
+          label={`Open a search over any app with ${getPlatform().os === 'darwin' ? 'Cmd' : 'Ctrl'}+Shift+Space`}
+          hint={getPlatform().kind === 'electron' ? 'Type, press Enter, and the password is on the clipboard. Works while the vault is unlocked.' : 'Needs the desktop app.'}
+        />
       </div>
       <div className="settings-section">
         <h3>Clipboard</h3>

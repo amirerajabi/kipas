@@ -2,6 +2,11 @@
 
 ## Released
 
+- **v1.2.0** (2026-10-24): new three-column layout and quick access. Notes: [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
+  - **New layout:** three columns (vault tree | items | details) in place of Grabbit's toolbar, table and status bar. The
+    side panel's footer carries Health, saving, clipboard, update and auto-lock; Health is a page of its own (Ctrl+H).
+  - **Quick access window** (Ctrl+Shift+Space, Settings → General). Checked in Electron through the real relay (search
+    and the shown rows); copying from it and the global shortcut itself were not pressed by hand.
 - **v1.1.0** (2026-10-22): import from KeePass. Notes: [release-notes/v1.1.0.md](release-notes/v1.1.0.md).
   - **Import from KeePass** (`.kdbx`, KDBX 3.1 and 4.x; AES-KDF, Argon2d/id; AES or ChaCha20; key files). Tested on files
     KeePass 2.61 wrote (`ui/test/fixtures`) and through the dialog in the browser preview. Twofish databases and KeePass

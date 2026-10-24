@@ -6,6 +6,7 @@ import { BROWSER_PREFIX, getPlatform } from '../../platform';
 import { useVault, type RecentVault } from '../../store/vault';
 import { VaultFormatError, WrongPasswordError } from '../../vault/crypto';
 import { SecretInput } from '../common/SecretInput';
+import { UpdateChip } from '../common/UpdateChip';
 import { BrandMark } from '../common/visuals';
 
 /** What you see while locked: unlock the last vault, pick another recent one, open a file or create a vault. */
@@ -58,6 +59,7 @@ export function LockScreen() {
       <div className="lock-footer muted">
         <ShieldCheck size={13} /> AES-256 encrypted · stored only on this device
       </div>
+      <UpdateChip />
     </div>
   );
 }

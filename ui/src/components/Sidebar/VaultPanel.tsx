@@ -10,7 +10,7 @@ import { KindIcon } from '../common/visuals';
 
 export const ENTRY_DRAG = 'application/x-kipas-entries';
 
-function same(a: Filter, b: Filter): boolean {
+function same(a: Filter | { kind: 'none' }, b: Filter): boolean {
   return a.kind === b.kind && (a as { id?: string }).id === (b as { id?: string }).id;
 }
 
@@ -19,7 +19,10 @@ const PLURAL: Record<string, string> = { login: 'Logins', card: 'Cards', note: '
 /** The vault tree: everything, favourites, item types, groups (drop items on one to move them), trash. */
 export function VaultPanel() {
   const data = useVault((s) => s.data);
-  const filter = useList((s) => s.filter);
+  const listFilter = useList((s) => s.filter);
+  const view = useUi((s) => s.view);
+  // On the Health page no list filter is highlighted.
+  const filter: Filter | { kind: 'none' } = view === 'items' ? listFilter : { kind: 'none' };
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const counts = useMemo(() => {
@@ -38,7 +41,10 @@ export function VaultPanel() {
   }, [data]);
 
   if (!data) return null;
-  const pick = (f: Filter) => useList.getState().setFilter(f);
+  const pick = (f: Filter) => {
+    useList.getState().setFilter(f);
+    useUi.getState().set({ view: 'items' });
+  };
   const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
 
   const groupMenu = (e: React.MouseEvent, id: string, name: string) => {
@@ -74,7 +80,7 @@ export function VaultPanel() {
           });
           if (!r.ok) return;
           useVault.getState().deleteGroup(id);
-          if (same(filter, { kind: 'group', id })) pick({ kind: 'all' });
+          if (same(listFilter, { kind: 'group', id })) pick({ kind: 'all' });
         },
       },
     ]);

@@ -45,8 +45,10 @@ function tint(s: string): number {
  */
 export function Avatar({ entry, size = 28 }: { entry: Pick<Entry, 'title' | 'url' | 'kind'>; size?: number }) {
   const host = hostOf(entry.url);
+  // The colour follows the site (so every Google login matches), the letter follows what you called it.
   const name = host || entry.title.trim();
-  const letter = entry.kind === 'login' && name ? [...name][0].toUpperCase() : null;
+  const label = entry.title.trim() || host;
+  const letter = entry.kind === 'login' && label ? [...label][0].toUpperCase() : null;
   return (
     <span className={`avatar tint-${tint(name || entry.kind)}`} style={{ width: size, height: size, fontSize: Math.round(size * 0.46) }} aria-hidden="true">
       {letter ?? <KindIcon kind={entry.kind} size={Math.round(size * 0.55)} />}

@@ -1,11 +1,13 @@
 // Kipas desktop: opens the window and owns the native bits the vault needs: file dialogs and atomic vault writes, a
-// clipboard that forgets secrets, and OS events (screen lock, sleep, minimize) that lock the vault.
+// clipboard that forgets secrets, OS events (screen lock, sleep, minimize) that lock the vault, and the quick-access
+// window (quick.ts).
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, powerMonitor, shell } from 'electron';
 import { promises as fs, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
 import type { SystemEvent, TextFileFilter } from '../../../shared/protocol';
 import { CH } from '../shared/channels';
 import { checkVaultPath, readVault, statVault, VAULT_EXT, writeVault } from './files';
+import { QuickAccess } from './quick';
 import { Updater } from './updater';
 import { createMainWindow, DARK, LIGHT, titleBarKind } from './window';
 
@@ -17,6 +19,7 @@ let win: BrowserWindow | null = null;
 let lastSecret: string | null = null;
 let clearTimer: NodeJS.Timeout | undefined;
 let updater: Updater | null = null;
+let quick: QuickAccess | null = null;
 
 const MAX_TEXT_FILE = 32 * 1024 * 1024;
 const VAULT_FILTERS = [{ name: 'Kipas vault', extensions: [VAULT_EXT] }];
@@ -32,6 +35,8 @@ async function start(): Promise<void> {
   app.setAppUserModelId('com.kipas.app');
   // A smoke test stays offline unless it points the updater at a test feed.
   updater = await Updater.create((m) => console.log(m), !!process.env.KIPAS_SMOKE_SHOT && !process.env.KIPAS_UPDATE_FEED);
+  quick = new QuickAccess(path.join(__dirname, 'preload.js'), devUrl, () => win, showWindow, (m) => console.log(m));
+  quick.install();
   installIpc();
   installMenu();
   openWindow();
@@ -49,6 +54,8 @@ function openWindow(): void {
   });
   win.on('closed', () => {
     win = null;
+    // The quick window is only hidden between uses; without this it would keep the app running after the main window closes.
+    quick?.destroy();
   });
 }
 
@@ -199,13 +206,16 @@ function installIpc(): void {
     return updater.quitAndInstall();
   });
   ipcMain.on(CH.setAutoUpdate, (_e, on: unknown) => updater?.configure(on !== false));
+  ipcMain.on(CH.setQuickAccess, (e, on: unknown) => e.sender === win?.webContents && quick?.configure(on === true));
 }
 
-/** Smoke test (KIPAS_SMOKE_SHOT=<file.png>): let the UI paint, capture the window, quit. */
+/** Smoke test (KIPAS_SMOKE_SHOT=<file.png>): let the UI paint, capture the window, quit. KIPAS_SMOKE_QUICK=1 captures the quick window. */
 function smokeShot(file: string): void {
+  if (process.env.KIPAS_SMOKE_QUICK) setTimeout(() => quick?.show(), 1000);
   setTimeout(async () => {
     try {
-      const image = await win!.webContents.capturePage();
+      const target = process.env.KIPAS_SMOKE_QUICK ? quick?.window : win;
+      const image = await target!.webContents.capturePage();
       writeFileSync(file, image.toPNG());
       console.log(`smoke: wrote ${file}`);
     } catch (e) {
@@ -217,6 +227,9 @@ function smokeShot(file: string): void {
 }
 
 // A secret must not outlive the app on the clipboard.
-app.on('will-quit', wipeClipboard);
+app.on('will-quit', () => {
+  wipeClipboard();
+  quick?.destroy();
+});
 app.on('window-all-closed', () => app.quit());
 app.on('activate', showWindow);

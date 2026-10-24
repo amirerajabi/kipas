@@ -19,6 +19,8 @@ device**. No account, no cloud, no tracking. Electron + React, with the same she
 - **Import KeePass databases** (`.kdbx`, KDBX 3.1 and 4.x from KeePass 2, KeePassXC, KeeWeb, Strongbox) directly, with
   their password and key file: groups, custom fields, two-factor secrets, password history and the recycle bin come along.
 - **Import** CSV from KeePass, KeePassXC, Bitwarden, 1Password, LastPass, Chrome, Edge, Firefox. **Export** to CSV.
+- **Quick access**: Ctrl+Shift+Space opens a small search over any app; Enter copies the password, Ctrl+B the user
+  name, Ctrl+T the one-time code. It never holds the vault: the main window does the copying.
 - **Keyboard first**: command palette (Ctrl+K, Ctrl+Enter copies a result's password), KeePass shortcuts (Ctrl+B user
   name, Ctrl+C password, Ctrl+U open site), drag items onto groups, light and dark themes.
 - **Automatic updates** from GitHub Releases (Windows and Linux install in the background; macOS gets a link).
@@ -51,7 +53,8 @@ npm run dist         # Windows installer into desktop/release/
 | `ui/src/store/` | zustand stores: `vault` (open vault, saving), `list` (filter, search, selection), `ui`, `settings`. |
 | `ui/src/app/commands.ts` | The command registry: toolbar, menus, palette and shortcuts all read it. |
 | `ui/src/platform.ts` | The bridge to Electron (`window.kipas`), with a localStorage fallback in a browser. |
-| `desktop/` | Electron main + preload: file dialogs, atomic vault writes, clipboard wiping, lock on OS events. |
+| `ui/src/quick/` | The quick-access window's screen (the same page, loaded with `#quick`). |
+| `desktop/` | Electron main + preload: file dialogs, atomic vault writes, clipboard wiping, lock on OS events, the quick-access window (`quick.ts`). |
 | `shared/protocol.ts` | Types that cross the renderer ⇄ desktop boundary. |
 
 ## Security notes

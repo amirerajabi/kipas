@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { analyzeHealth, type HealthIssue, type HealthReport } from '../vault/health';
-import { hostOf, type Entry, type EntryKind, type VaultData } from '../vault/model';
+import type { QuickResult } from '../../../shared/protocol';
+import { hostOf, openableUrl, type Entry, type EntryKind, type VaultData } from '../vault/model';
+import { parseTotp } from '../vault/totp';
 
 export type Filter =
   | { kind: 'all' }
@@ -93,4 +95,31 @@ export function visibleEntries(data: VaultData | null, s: Pick<ListState, 'filte
     const r = key === 'modified' || key === 'created' ? a[key] - b[key] : collator.compare(a[key] || '￿', b[key] || '￿');
     return r * dir || collator.compare(a.title, b.title);
   });
+}
+
+/**
+ * What the quick-access window shows for a query: live entries, best matches first (a title that starts with the query,
+ * then favourites); with no query, favourites and then the most recently changed. Only display fields leave the vault.
+ */
+export function quickResults(data: VaultData, query: string, limit = 8): QuickResult[] {
+  const q = query.trim().toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  const groups = new Map(data.groups.map((g) => [g.id, g.name]));
+  const rank = (e: Entry) => (q && e.title.toLowerCase().startsWith(q) ? 4 : 0) + (q && hostOf(e.url).startsWith(q) ? 2 : 0) + (e.favorite ? 1 : 0);
+  return data.entries
+    .filter((e) => !e.trashed && matchesQuery(e, words, e.groupId ? (groups.get(e.groupId) ?? '') : ''))
+    .sort((a, b) => rank(b) - rank(a) || b.modified - a.modified)
+    .slice(0, limit)
+    .map((e) => ({
+      id: e.id,
+      title: e.title || 'Untitled',
+      // Never note text: notes often hold the secret itself.
+      subtitle: e.username || hostOf(e.url),
+      kind: e.kind,
+      host: hostOf(e.url),
+      hasUsername: !!e.username,
+      hasPassword: !!e.password,
+      hasTotp: !!parseTotp(e.totp),
+      hasUrl: !!openableUrl(e.url),
+    }));
 }

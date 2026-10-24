@@ -11,24 +11,24 @@ import { DetailsPane } from './components/DetailsPane/DetailsPane';
 import { EntryEditor } from './components/EntryEditor/EntryEditor';
 import { EntryList } from './components/EntryList/EntryList';
 import { GeneratorDialog } from './components/Generator/GeneratorDialog';
+import { HealthPage } from './components/Health/HealthPage';
 import { KeePassImportDialog } from './components/KeePassImport/KeePassImportDialog';
-import { Dock } from './components/layout/Dock';
 import { TopBar } from './components/layout/TopBar';
 import { CreateVaultDialog } from './components/LockScreen/CreateVaultDialog';
 import { LockScreen } from './components/LockScreen/LockScreen';
 import { ChangePasswordDialog } from './components/Settings/ChangePasswordDialog';
 import { SettingsDialog } from './components/Settings/SettingsDialog';
 import { ShortcutSheet } from './components/Shortcuts/ShortcutSheet';
-import { StatusBar } from './components/StatusBar/StatusBar';
-import { Toolbar } from './components/Toolbar/Toolbar';
+import { Sidebar } from './components/Sidebar/Sidebar';
 import { useUi } from './store/ui';
 import { useVault } from './store/vault';
 import { useTheme } from './theme/theme';
 
-/** Shell (Grabbit/Rowlit layout): glass top bar, dock | workspace (toolbar, list | details), status bar, overlays. */
+/** Shell: a slim title bar over three columns (vault tree | items | details), or the lock screen; overlays on top. */
 export default function App() {
   const theme = useTheme();
   const unlocked = useVault((s) => !!s.data);
+  const view = useUi((s) => s.view);
   useEffect(() => {
     const stop = boot();
     const keys = installKeyboard();
@@ -43,16 +43,12 @@ export default function App() {
       <TopBar theme={theme} />
       {unlocked ? (
         <div className="main">
-          <Dock />
-          <section className="workspace" aria-label="Items">
-            <Toolbar />
-            <Workspace />
-          </section>
+          <Sidebar />
+          {view === 'health' ? <HealthPage /> : <Workspace />}
         </div>
       ) : (
         <LockScreen />
       )}
-      <StatusBar />
       <MenuHost />
       <CreateVaultDialog />
       <EntryEditor />
@@ -69,24 +65,24 @@ export default function App() {
   );
 }
 
-/** List beside details, with a draggable split; the details width is remembered. */
+/** Items beside details, with a draggable split; the details width is remembered. */
 function Workspace() {
   const visible = useUi((s) => s.detailsVisible);
   const width = useUi((s) => s.detailsWidth);
   const ref = useRef<HTMLDivElement>(null);
   const [start, setStart] = useState(0);
   return (
-    <div className="workspace-body" ref={ref}>
+    <div className="workspace" ref={ref}>
       <EntryList />
       {visible && (
         <>
           <Splitter
             direction="vertical"
             ariaLabel="Resize details pane"
-            onDragStart={() => setStart((ref.current?.querySelector('.details') as HTMLElement | null)?.offsetWidth ?? 360)}
+            onDragStart={() => setStart((ref.current?.querySelector('.details') as HTMLElement | null)?.offsetWidth ?? 420)}
             onDrag={(d) => {
-              const max = (ref.current?.clientWidth ?? 900) - 320;
-              useUi.getState().setLayout({ detailsWidth: Math.max(300, Math.min(max, start - d)) });
+              const max = (ref.current?.clientWidth ?? 900) - 300;
+              useUi.getState().setLayout({ detailsWidth: Math.max(340, Math.min(max, start - d)) });
             }}
             onDoubleClick={() => useUi.getState().setLayout({ detailsWidth: 0 })}
           />

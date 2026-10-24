@@ -103,7 +103,18 @@ export function createMainWindow(preloadPath: string, devUrl?: string): BrowserW
   if (state.maximized) win.maximize();
   trackState(win);
 
-  // Never navigate away from the app; links open in the default browser.
+  lockDown(win, devUrl);
+
+  win.once('ready-to-show', () => {
+    if (!process.argv.includes('--hidden')) win.show();
+  });
+  if (devUrl) void win.loadURL(devUrl);
+  else void win.loadFile(uiIndex());
+  return win;
+}
+
+/** Never navigate away from the app; links open in the default browser; no permission is ever granted. */
+function lockDown(win: BrowserWindow, devUrl?: string): void {
   const allowed = devUrl ? new URL(devUrl).origin : 'file://';
   win.webContents.on('will-navigate', (e, url) => {
     if (!url.startsWith(allowed)) {
@@ -115,13 +126,44 @@ export function createMainWindow(preloadPath: string, devUrl?: string): BrowserW
     if (/^https?:/.test(url)) void shell.openExternal(url);
     return { action: 'deny' };
   });
-  // No camera, microphone, notifications or anything else a page could ask for.
   win.webContents.session.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
+}
 
-  win.once('ready-to-show', () => {
-    if (!process.argv.includes('--hidden')) win.show();
+export const QUICK_SIZE = { width: 600, height: 440 };
+
+/**
+ * The quick-access window: small, frameless, over every other app. It loads the same UI with `#quick`, which renders
+ * only the search; it is hidden, not closed, between uses so it opens instantly.
+ */
+export function createQuickWindow(preloadPath: string, devUrl?: string): BrowserWindow {
+  const colors = nativeTheme.shouldUseDarkColors ? DARK : LIGHT;
+  const win = new BrowserWindow({
+    ...QUICK_SIZE,
+    show: false,
+    frame: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    title: 'Kipas quick access',
+    icon: iconPath(),
+    backgroundColor: colors.bg,
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      spellcheck: false,
+      webviewTag: false,
+      navigateOnDragDrop: false,
+      additionalArguments: [`${ARG.titleBar}`, ARG.quick],
+    },
   });
-  if (devUrl) void win.loadURL(devUrl);
-  else void win.loadFile(uiIndex());
+  win.setAlwaysOnTop(true, 'pop-up-menu');
+  lockDown(win, devUrl);
+  if (devUrl) void win.loadURL(`${devUrl}#quick`);
+  else void win.loadFile(uiIndex(), { hash: 'quick' });
   return win;
 }

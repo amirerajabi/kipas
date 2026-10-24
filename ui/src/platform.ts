@@ -1,4 +1,4 @@
-import type { SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
+import type { QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
 
 /**
  * What the UI needs from its host. In Electron the preload script exposes `window.kipas`; in a plain browser
@@ -35,6 +35,17 @@ export interface DesktopBridge {
   installUpdate(): Promise<boolean>;
   setAutoUpdate(on: boolean): void;
   onUpdateStatus(cb: (status: UpdateStatus) => void): () => void;
+  /** This renderer is the quick-access window (#quick), not the main window. */
+  isQuickWindow: boolean;
+  /** Turn the global quick-access shortcut on or off. */
+  setQuickAccess(on: boolean): void;
+  quickSearch(query: string): Promise<QuickAnswer>;
+  quickAct(entryId: string, action: QuickAction): Promise<boolean>;
+  quickHide(): void;
+  quickShowMain(): void;
+  onQuickShown(cb: () => void): () => void;
+  /** Main window: answer the quick window's search and copy requests. */
+  onQuickRequest(handler: (req: QuickRequest) => unknown): () => void;
   onCommand(cb: (command: string) => void): () => void;
 }
 
@@ -149,6 +160,14 @@ function browserPlatform(): Platform {
     installUpdate: async () => false,
     setAutoUpdate: noop,
     onUpdateStatus: () => noop,
+    isQuickWindow: false,
+    setQuickAccess: noop,
+    quickSearch: async () => ({ locked: true }),
+    quickAct: async () => false,
+    quickHide: noop,
+    quickShowMain: noop,
+    onQuickShown: () => noop,
+    onQuickRequest: () => noop,
     onCommand: () => noop,
   };
 }

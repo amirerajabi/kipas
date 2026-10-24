@@ -1,38 +1,64 @@
-import { ArrowDown, ArrowUp, Download, FileLock2, KeyRound, Plus, SearchX, Star, Trash2 } from 'lucide-react';
+import { ArrowDownUp, Copy, Download, FileLock2, KeyRound, Plus, Search, SearchX, Star, Trash2, User, X } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
-import { importFromCsv, newEntry } from '../../app/actions';
-import { runCommand } from '../../app/commands';
+import { copyText, emptyTrash, importFromCsv, newEntry } from '../../app/actions';
+import { getCommand, runCommand } from '../../app/commands';
+import { withShortcut } from '../../app/keys';
+import { pluralize } from '../../lib/format';
+import { healthOf, useList, visibleEntries, type Filter, type SortKey } from '../../store/list';
 import { useUi } from '../../store/ui';
-import { formatAge } from '../../lib/format';
-import { useList, visibleEntries, type SortKey } from '../../store/list';
-import { useSettings } from '../../store/settings';
 import { useVault } from '../../store/vault';
-import { hostOf, type Entry } from '../../vault/model';
-import { Avatar, Kbd, StrengthDot } from '../common/visuals';
+import { HEALTH_LABEL } from '../../vault/health';
+import { hostOf, KIND_LABEL, KINDS, type Entry, type VaultData } from '../../vault/model';
+import { showMenuBelow } from '../common/Menu';
+import { Avatar, KindIcon } from '../common/visuals';
 import { ENTRY_DRAG } from '../Sidebar/VaultPanel';
 import { entryMenu } from './contextMenu';
 
-const COLUMNS: { key: SortKey | null; label: string; className: string }[] = [
-  { key: 'title', label: 'Title', className: 'col-title' },
-  { key: 'username', label: 'User name', className: 'col-user' },
-  { key: null, label: 'Website', className: 'col-site' },
-  { key: null, label: 'Group', className: 'col-group' },
-  { key: 'modified', label: 'Modified', className: 'col-date' },
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'title', label: 'Name' },
+  { key: 'modified', label: 'Recently changed' },
+  { key: 'created', label: 'Recently added' },
+  { key: 'username', label: 'User name' },
 ];
 
-/** The item list: sortable columns, multi-select (Ctrl/Shift), keyboard navigation, context menu, drag to a group. */
+const PLURAL: Record<string, string> = { login: 'Logins', card: 'Cards', note: 'Secure notes', wifi: 'Wi-Fi networks' };
+
+function filterTitle(f: Filter, data: VaultData): string {
+  switch (f.kind) {
+    case 'all':
+      return 'All items';
+    case 'favorites':
+      return 'Favorites';
+    case 'trash':
+      return 'Trash';
+    case 'type':
+      return PLURAL[f.id] ?? KIND_LABEL[f.id];
+    case 'group':
+      return data.groups.find((g) => g.id === f.id)?.name ?? 'Group';
+    case 'health':
+      return HEALTH_LABEL[f.id];
+  }
+}
+
+/** The middle column: what is shown, search, and the items as roomy rows with quick copy buttons. */
 export function EntryList() {
   const data = useVault((s) => s.data);
   const filter = useList((s) => s.filter);
   const query = useList((s) => s.query);
   const sort = useList((s) => s.sort);
   const selected = useList((s) => s.selected);
-  const showPassword = useSettings((s) => s.settings.showPasswordColumn);
   const ref = useRef<HTMLDivElement>(null);
 
   const rows = useMemo(() => visibleEntries(data, { filter, query, sort }), [data, filter, query, sort]);
-  const groups = useMemo(() => new Map((data?.groups ?? []).map((g) => [g.id, g.name])), [data]);
   const sel = useMemo(() => new Set(selected), [selected]);
+  const flagged = useMemo(() => {
+    if (!data) return new Map<string, string>();
+    const r = healthOf(data.entries);
+    const m = new Map<string, string>();
+    for (const id of r.reused) m.set(id, 'Reused');
+    for (const id of r.weak) m.set(id, 'Weak');
+    return m;
+  }, [data]);
 
   // Drop selected ids that left the view (deleted, filtered out by a search).
   useEffect(() => {
@@ -80,7 +106,8 @@ export function EntryList() {
       e.preventDefault();
       const row = ref.current?.querySelector('.entry-row.focus') as HTMLElement | null;
       const r = row?.getBoundingClientRect();
-      if (r && current(rows, focusId)) entryMenu(r.left + 40, r.bottom, current(rows, focusId)!);
+      const entry = rows.find((x) => x.id === focusId);
+      if (r && entry) entryMenu(r.left + 40, r.bottom, entry);
       return;
     }
     if (next < 0) return;
@@ -96,25 +123,76 @@ export function EntryList() {
 
   if (!data) return null;
   const totalLive = data.entries.filter((e) => !e.trashed).length;
+  const trash = filter.kind === 'trash';
+  // Favourites come first when sorted by name; label the two parts when both are there.
+  const sections = sort.key === 'title' && !query && filter.kind !== 'favorites' && !trash && rows.some((r) => r.favorite) && rows.some((r) => !r.favorite);
 
   return (
-    <div className={`entry-table${showPassword ? ' with-password' : ''}`}>
-      <div className="entry-header entry-grid" role="row">
-        {COLUMNS.map((c) => (
+    <section className="entry-column" aria-label="Items">
+      <div className="entry-head">
+        <div className="entry-head-row">
+          <h2 className="entry-head-title ellipsis">{query ? 'Search results' : filterTitle(filter, data)}</h2>
+          <span className="muted tabular">{rows.length}</span>
+          <div className="flex-1" />
           <button
-            key={c.label}
-            type="button"
-            role="columnheader"
-            className={`entry-th ${c.className}${c.key && sort.key === c.key ? ' sorted' : ''}`}
-            disabled={!c.key}
-            onClick={() => c.key && useList.getState().setSort(c.key)}
-            aria-sort={c.key && sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}
+            className="icon-btn"
+            title="Sort"
+            aria-label="Sort"
+            onClick={(e) =>
+              showMenuBelow(
+                e.currentTarget,
+                SORTS.map((s) => ({ label: s.label, checked: sort.key === s.key, run: () => useList.getState().setSort(s.key) })),
+              )
+            }
           >
-            {c.label}
-            {c.key && sort.key === c.key && (sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            <ArrowDownUp size={15} />
           </button>
-        ))}
-        {showPassword && <span className="entry-th col-pass">Password</span>}
+          {trash ? (
+            <button className="btn btn-xs" onClick={() => void emptyTrash()} disabled={rows.length === 0}>
+              <Trash2 size={13} /> Empty
+            </button>
+          ) : (
+            <button
+              className="new-btn"
+              title={withShortcut('New item', getCommand('entry.new')?.shortcut)}
+              aria-label="New item"
+              aria-haspopup="menu"
+              onClick={(e) => showMenuBelow(e.currentTarget, KINDS.map((k) => ({ label: `New ${KIND_LABEL[k].toLowerCase()}`, run: () => newEntry(k) })))}
+            >
+              <Plus size={18} />
+            </button>
+          )}
+        </div>
+        <label className="entry-search" title={withShortcut('Search the vault', getCommand('view.focusFilter')?.shortcut)}>
+          <Search size={15} />
+          <input
+            id="list-filter"
+            placeholder={trash ? 'Search the trash' : `Search ${pluralize(totalLive, 'item')}`}
+            value={query}
+            spellCheck={false}
+            autoComplete="off"
+            onChange={(e) => useList.getState().setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              const list = ref.current;
+              if (e.key === 'Escape') {
+                useList.getState().setQuery('');
+                list?.focus();
+              } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                // Search, then Enter or ↓ lands on the first match, ready for Ctrl+C.
+                e.preventDefault();
+                list?.focus();
+                list?.dispatchEvent(new CustomEvent('select-first'));
+              }
+            }}
+          />
+          {query ? (
+            <button className="icon-btn xs" aria-label="Clear search" onClick={() => useList.getState().setQuery('')}>
+              <X size={14} />
+            </button>
+          ) : (
+            <kbd className="entry-search-kbd">Ctrl F</kbd>
+          )}
+        </label>
       </div>
       <div ref={ref} className="entry-list" role="listbox" aria-multiselectable="true" aria-label="Items" tabIndex={0} onKeyDown={onKeyDown}>
         {rows.length === 0 ? (
@@ -123,66 +201,66 @@ export function EntryList() {
           rows.map((entry, n) => {
             const isSel = sel.has(entry.id);
             const host = hostOf(entry.url);
+            const heading = sections && (n === 0 ? 'Favorites' : rows[n - 1].favorite && !entry.favorite ? 'All items' : null);
+            const badge = flagged.get(entry.id);
             return (
-              <div
-                key={entry.id}
-                role="option"
-                aria-selected={isSel}
-                className={`entry-row entry-grid${n % 2 ? ' alt' : ''}${isSel ? ' selected' : ''}${entry.id === selected[selected.length - 1] ? ' focus' : ''}`}
-                // A plain press on a selected row waits for the click, so the whole selection can be dragged to a group.
-                onMouseDown={(e) => e.button === 0 && !(isSel && !e.shiftKey && !e.ctrlKey && !e.metaKey) && click(e, entry)}
-                onClick={(e) => isSel && !e.shiftKey && !e.ctrlKey && !e.metaKey && selected.length > 1 && useList.getState().select([entry.id])}
-                onDoubleClick={() => runCommand(entry.trashed ? 'entry.restore' : 'entry.edit')}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  if (!isSel) useList.getState().select([entry.id]);
-                  entryMenu(e.clientX, e.clientY, entry);
-                }}
-                draggable={!entry.trashed}
-                onDragStart={(e) => {
-                  const ids = isSel ? selected : [entry.id];
-                  if (!isSel) useList.getState().select([entry.id]);
-                  e.dataTransfer.setData(ENTRY_DRAG, JSON.stringify(ids));
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-              >
-                <span className="entry-cell col-title">
-                  <Avatar entry={entry} />
-                  <span className="entry-title-text">
+              <div key={entry.id}>
+                {heading && <div className="entry-section">{heading}</div>}
+                <div
+                  role="option"
+                  aria-selected={isSel}
+                  className={`entry-row${isSel ? ' selected' : ''}${entry.id === selected[selected.length - 1] ? ' focus' : ''}`}
+                  // A plain press on a selected row waits for the click, so the whole selection can be dragged to a group.
+                  onMouseDown={(e) => e.button === 0 && !(isSel && !e.shiftKey && !e.ctrlKey && !e.metaKey) && click(e, entry)}
+                  onClick={(e) => isSel && !e.shiftKey && !e.ctrlKey && !e.metaKey && selected.length > 1 && useList.getState().select([entry.id])}
+                  onDoubleClick={() => runCommand(entry.trashed ? 'entry.restore' : 'entry.edit')}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    if (!isSel) useList.getState().select([entry.id]);
+                    entryMenu(e.clientX, e.clientY, entry);
+                  }}
+                  draggable={!entry.trashed}
+                  onDragStart={(e) => {
+                    const ids = isSel ? selected : [entry.id];
+                    if (!isSel) useList.getState().select([entry.id]);
+                    e.dataTransfer.setData(ENTRY_DRAG, JSON.stringify(ids));
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                >
+                  <Avatar entry={entry} size={34} />
+                  <span className="entry-text">
                     <span className="entry-title ellipsis">
                       {entry.title || <span className="muted">Untitled</span>}
-                      {entry.favorite && <Star size={12} className="fav-star" aria-label="Favorite" />}
+                      {entry.favorite && !sections && <Star size={12} className="fav-star" aria-label="Favorite" />}
                     </span>
-                    <span className="entry-sub ellipsis muted">{entry.username || host || entry.notes.split('\n')[0]}</span>
+                    <span className="entry-sub ellipsis">
+                      {entry.kind !== 'login' && !entry.username && <KindIcon kind={entry.kind} size={12} />}
+                      {entry.username || host || entry.notes.split('\n')[0] || KIND_LABEL[entry.kind]}
+                    </span>
                   </span>
-                </span>
-                <span className="entry-cell col-user ellipsis">{entry.username}</span>
-                <span className="entry-cell col-site ellipsis muted">{host}</span>
-                <span className="entry-cell col-group ellipsis muted">{entry.groupId ? groups.get(entry.groupId) : ''}</span>
-                <span className="entry-cell col-date muted tabular" title={new Date(entry.modified).toLocaleString()}>
-                  {formatAge(entry.modified)}
-                </span>
-                {showPassword && (
-                  <span className="entry-cell col-pass">
-                    {entry.password ? (
-                      <>
-                        <span className="mask">••••••••</span>
-                        <StrengthDot password={entry.password} />
-                      </>
-                    ) : null}
-                  </span>
-                )}
+                  {badge && !trash && <span className="entry-badge">{badge}</span>}
+                  {!entry.trashed && (entry.username || entry.password) && (
+                    <span className="entry-quick" onMouseDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                      {entry.username && (
+                        <button className="quick-btn" title="Copy user name" aria-label={`Copy user name of ${entry.title}`} onClick={() => copyText(entry.username, 'User name', false)}>
+                          <User size={14} />
+                        </button>
+                      )}
+                      {entry.password && (
+                        <button className="quick-btn primary" title="Copy password" aria-label={`Copy password of ${entry.title}`} onClick={() => copyText(entry.password, 'Password')}>
+                          <Copy size={14} />
+                        </button>
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })
         )}
       </div>
-    </div>
+    </section>
   );
-}
-
-function current(rows: Entry[], id: string | undefined): Entry | undefined {
-  return rows.find((r) => r.id === id);
 }
 
 function Empty({ totalLive }: { totalLive: number }) {
@@ -225,18 +303,6 @@ function Empty({ totalLive }: { totalLive: number }) {
             <Download size={16} /> Import CSV
           </button>
         </div>
-        <ul className="empty-tips muted">
-          <li>
-            <Kbd shortcut="Mod+N" /> new item
-          </li>
-          <li>
-            <Kbd shortcut="Mod+G" /> password generator
-          </li>
-          <li>
-            <Kbd shortcut="Mod+K" /> find anything
-          </li>
-          <li>Every change is saved and encrypted at once. Nothing leaves this device.</li>
-        </ul>
       </div>
     );
   }

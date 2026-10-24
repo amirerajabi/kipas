@@ -15,10 +15,10 @@ export interface Settings {
   clipboardSeconds: number;
   lockOnMinimize: boolean;
   lockOnSystemLock: boolean;
-  /** Show the password column masked in the list. */
-  showPasswordColumn: boolean;
   /** Check GitHub Releases for a new version at start and every 6 hours (desktop app). */
   autoUpdate: boolean;
+  /** Ctrl+Shift+Space opens the quick-access window over any app (desktop app). */
+  quickAccess: boolean;
   generator: GeneratorOptions;
 }
 
@@ -28,8 +28,8 @@ export const DEFAULT_SETTINGS: Settings = {
   clipboardSeconds: 20,
   lockOnMinimize: false,
   lockOnSystemLock: true,
-  showPasswordColumn: false,
   autoUpdate: true,
+  quickAccess: true,
   generator: DEFAULT_GENERATOR,
 };
 

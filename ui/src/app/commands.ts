@@ -185,8 +185,19 @@ export const COMMANDS: Command[] = [
   { id: 'vault.importKeePass', label: 'Import from KeePass…', icon: FileLock2, disabled: locked, run: () => useUi.getState().set({ keepassImportOpen: true }) },
   { id: 'vault.import', label: 'Import from CSV…', icon: Download, disabled: locked, run: importFromCsv },
   { id: 'vault.export', label: 'Export to CSV…', icon: Upload, disabled: locked, run: exportToCsv },
+  { id: 'view.health', label: 'Password health', icon: ShieldCheck, shortcut: 'Mod+H', disabled: locked, run: () => useUi.getState().set({ view: 'health' }) },
   { id: 'view.palette', label: 'Command palette', icon: Search, shortcut: 'Mod+K', palette: false, disabled: locked, run: () => useUi.getState().set({ paletteOpen: true }) },
-  { id: 'view.focusFilter', label: 'Search the vault', icon: Search, shortcut: 'Mod+F', disabled: locked, run: () => document.getElementById('list-filter')?.focus() },
+  {
+    id: 'view.focusFilter',
+    label: 'Search the vault',
+    icon: Search,
+    shortcut: 'Mod+F',
+    disabled: locked,
+    run: () => {
+      useUi.getState().set({ view: 'items' });
+      setTimeout(() => document.getElementById('list-filter')?.focus(), 0);
+    },
+  },
   { id: 'view.toggleSidebar', label: 'Toggle side panel', icon: PanelLeft, shortcut: 'Mod+Shift+B', run: () => useUi.getState().setLayout({ sidebarVisible: !useUi.getState().sidebarVisible }) },
   { id: 'view.toggleDetails', label: 'Toggle details pane', icon: PanelRight, shortcut: 'Mod+J', run: () => useUi.getState().setLayout({ detailsVisible: !useUi.getState().detailsVisible }) },
   { id: 'view.toggleTheme', label: 'Switch theme (system / dark / light)', icon: SunMoon, run: toggleTheme },

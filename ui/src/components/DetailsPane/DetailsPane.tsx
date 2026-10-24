@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Copy, Eye, EyeOff, History, MousePointerClick, Pencil, SquareArrowOutUpRight, Star, Trash2 } from 'lucide-react';
+import { ArchiveRestore, ChevronDown, ChevronRight, Eye, EyeOff, History, MoreHorizontal, MousePointerClick, Pencil, SquareArrowOutUpRight, Star, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { copyText, deleteEntries, editEntry, openUrl, selectedEntries } from '../../app/actions';
 import { runCommand } from '../../app/commands';
@@ -10,8 +10,9 @@ import type { HealthIssue } from '../../vault/health';
 import { hostOf, KIND_LABEL, openableUrl, type Entry } from '../../vault/model';
 import { groupCode, parseTotp, totpNow, type TotpSpec } from '../../vault/totp';
 import { Avatar, CountdownRing, StrengthMeter } from '../common/visuals';
+import { entryMenu } from '../EntryList/contextMenu';
 
-/** The selected item, read-only, with a copy button on every field. Secrets stay masked until you ask. */
+/** The right column: the selected item, read-only, with a Copy button on every field. Secrets stay masked until you ask. */
 export function DetailsPane() {
   const data = useVault((s) => s.data);
   const selected = useList((s) => s.selected);
@@ -82,7 +83,7 @@ function EntryDetails({ entry, groupName, issues }: { entry: Entry; groupName?: 
           <h2 className="details-title ellipsis selectable">{entry.title || 'Untitled'}</h2>
           <span className="muted ellipsis">
             {KIND_LABEL[entry.kind]}
-            {groupName && ` · ${groupName}`}
+            {groupName && ` · ${groupName}`} · edited {formatAge(entry.modified)}
           </span>
         </div>
         {!entry.trashed && (
@@ -100,6 +101,28 @@ function EntryDetails({ entry, groupName, issues }: { entry: Entry; groupName?: 
             </button>
           </>
         )}
+        {entry.trashed && (
+          <>
+            <button className="btn" onClick={() => runCommand('entry.restore')}>
+              <ArchiveRestore size={14} /> Restore
+            </button>
+            <button className="btn btn-danger" onClick={() => void deleteEntries([entry.id])}>
+              <Trash2 size={14} /> Delete
+            </button>
+          </>
+        )}
+        <button
+          className="btn btn-icon"
+          title="More actions"
+          aria-label="More actions"
+          aria-haspopup="menu"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            entryMenu(r.right - 220, r.bottom + 4, entry);
+          }}
+        >
+          <MoreHorizontal size={16} />
+        </button>
       </div>
 
       {entry.trashed && <div className="notice warning">In the trash since {formatDate(entry.trashed)}. Restore it to use or edit it.</div>}
@@ -121,6 +144,7 @@ function EntryDetails({ entry, groupName, issues }: { entry: Entry; groupName?: 
               shown={isRevealed('password')}
               onToggle={() => toggle('password')}
               onCopy={() => copyText(entry.password, 'Password')}
+              primary
               below={<StrengthMeter password={entry.password} />}
             />
           )}
@@ -226,6 +250,8 @@ function FieldRow(props: {
   onCopy: () => void;
   extra?: ReactNode;
   below?: ReactNode;
+  /** The field people copy most (the password): its Copy button stands out. */
+  primary?: boolean;
 }) {
   const masked = props.secret && !props.shown;
   return (
@@ -244,8 +270,8 @@ function FieldRow(props: {
             {props.shown ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
         )}
-        <button className="icon-btn sm" title={`Copy ${props.label.toLowerCase()}`} aria-label={`Copy ${props.label}`} onClick={props.onCopy}>
-          <Copy size={15} />
+        <button className={`copy-btn${props.primary ? ' primary' : ''}`} aria-label={`Copy ${props.label}`} onClick={props.onCopy}>
+          Copy
         </button>
       </div>
     </div>

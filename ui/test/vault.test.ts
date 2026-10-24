@@ -2,7 +2,7 @@
 // CSV import/export, health, and list filtering. Run with `npm test` (node:test via tsx).
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { visibleEntries } from '../src/store/list';
+import { quickResults, visibleEntries } from '../src/store/list';
 import { createKey, MIN_ITERATIONS, openVault, openWithKey, parseEnvelope, seal, VaultFormatError, WrongPasswordError, type VaultEnvelope } from '../src/vault/crypto';
 import { exportCsv, importCsv, parseCsv, toCsv } from '../src/vault/csv';
 import { DEFAULT_GENERATOR, generatePassphrase, generatePassword, generatorBits, randomInt } from '../src/vault/generator';
@@ -234,6 +234,25 @@ describe('health and list', () => {
     assert.deepEqual([...r.old], [entries[2].id]);
     assert.equal(r.no2fa.size, 3);
     assert.ok(r.score < 50);
+  });
+
+  it('gives the quick window display fields only, best matches first', () => {
+    const v = sampleVault();
+    const note = blankEntry('note');
+    note.title = 'Git server note';
+    note.notes = 'root password is hunter2';
+    const fav = blankEntry('login');
+    Object.assign(fav, { title: 'Gitea', username: 'admin', password: 'x', favorite: true, modified: 1 });
+    const gone = blankEntry('login');
+    Object.assign(gone, { title: 'GitHub old', trashed: Date.now() });
+    v.entries.push(note, fav, gone);
+    const r = quickResults(v, 'git');
+    assert.deepEqual(r.map((x) => x.title), ['GitHub', 'Gitea', 'Git server note'], 'title and site match beat title alone, then favourites; trash left out');
+    assert.ok(!JSON.stringify(r).includes('hunter2'), 'no note text');
+    assert.ok(!JSON.stringify(r).includes('correct horse'), 'no passwords');
+    assert.deepEqual(Object.keys(r[0]).sort(), ['hasPassword', 'hasTotp', 'hasUrl', 'hasUsername', 'host', 'id', 'kind', 'subtitle', 'title']);
+    assert.equal(r[0].subtitle, 'octo');
+    assert.equal(quickResults(v, '').length, 3);
   });
 
   it('filters, searches across fields and keeps the trash apart', () => {

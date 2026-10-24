@@ -21,9 +21,22 @@ export const CH = {
   updateCheck: 'kipas:update-check',
   updateInstall: 'kipas:update-install',
   setAutoUpdate: 'kipas:set-auto-update',
+  // Quick-access window: it asks main, main asks the main window (which holds the vault) and relays the answer.
+  setQuickAccess: 'kipas:set-quick-access',
+  quickSearch: 'kipas:quick-search',
+  quickAct: 'kipas:quick-act',
+  quickHide: 'kipas:quick-hide',
+  quickShowMain: 'kipas:quick-show-main',
+  quickShown: 'kipas:quick-shown',
+  quickRequest: 'kipas:quick-request',
+  quickReply: 'kipas:quick-reply',
 } as const;
 
 /** additionalArguments passed to the renderer: --kipas-titlebar=<kind> */
 export const ARG = {
   titleBar: '--kipas-titlebar=',
+  /** Present only in the quick-access window. */
+  quick: '--kipas-quick',
 } as const;
+
+export const QUICK_SHORTCUT = 'CommandOrControl+Shift+Space';

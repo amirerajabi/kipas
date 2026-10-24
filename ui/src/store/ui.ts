@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { EntryKind } from '../vault/model';
 
-export type DockPanel = 'vault' | 'health';
+/** The main area: the item list with details, or the password health page. */
+export type MainView = 'items' | 'health';
 export type SettingsSection = 'general' | 'security' | 'data' | 'updates' | 'about';
 
 export interface Toast {
@@ -37,7 +38,7 @@ export interface GeneratorState {
   onUse?: (password: string) => void;
 }
 
-/** A copied secret, for the status bar countdown. */
+/** A copied secret, for the countdown in the side panel. */
 export interface ClipboardState {
   label: string;
   clearsAt: number | null;
@@ -46,12 +47,12 @@ export interface ClipboardState {
 export const DOCK_MIN = 180;
 export const DOCK_MAX = 420;
 
-type Layout = Pick<UiState, 'sidebarVisible' | 'sidebarWidth' | 'detailsVisible' | 'detailsWidth' | 'dock'>;
+type Layout = Pick<UiState, 'sidebarVisible' | 'sidebarWidth' | 'detailsVisible' | 'detailsWidth'>;
 
 interface UiState {
   sidebarVisible: boolean;
   sidebarWidth: number;
-  dock: DockPanel;
+  view: MainView;
   detailsVisible: boolean;
   detailsWidth: number;
   editor: EditorState | null;
@@ -69,7 +70,7 @@ interface UiState {
   prompt: PromptState | null;
   toasts: Toast[];
   setLayout(p: Partial<Layout>): void;
-  set(p: Partial<Pick<UiState, 'editor' | 'generator' | 'createVaultOpen' | 'keepassImportOpen' | 'settingsOpen' | 'changePasswordOpen' | 'paletteOpen' | 'shortcutsOpen' | 'clipboard' | 'revealed'>>): void;
+  set(p: Partial<Pick<UiState, 'view' | 'editor' | 'generator' | 'createVaultOpen' | 'keepassImportOpen' | 'settingsOpen' | 'changePasswordOpen' | 'paletteOpen' | 'shortcutsOpen' | 'clipboard' | 'revealed'>>): void;
   askConfirm(c: Omit<ConfirmState, 'resolve'>): Promise<{ ok: boolean; checked: boolean }>;
   resolveConfirm(ok: boolean, checked?: boolean): void;
   askText(p: Omit<PromptState, 'resolve'>): Promise<string | null>;
@@ -95,7 +96,7 @@ let toastId = 0;
 export const useUi = create<UiState>((set, get) => ({
   sidebarVisible: true,
   sidebarWidth: 0,
-  dock: 'vault',
+  view: 'items',
   detailsVisible: true,
   detailsWidth: 0,
   ...loadLayout(),
@@ -117,7 +118,7 @@ export const useUi = create<UiState>((set, get) => ({
     set(p);
     const s = get();
     try {
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ sidebarVisible: s.sidebarVisible, sidebarWidth: s.sidebarWidth, detailsVisible: s.detailsVisible, detailsWidth: s.detailsWidth, dock: s.dock }));
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ sidebarVisible: s.sidebarVisible, sidebarWidth: s.sidebarWidth, detailsVisible: s.detailsVisible, detailsWidth: s.detailsWidth }));
     } catch {
       /* private mode */
     }
@@ -150,6 +151,6 @@ export const useUi = create<UiState>((set, get) => ({
   closeAll() {
     get().resolveConfirm(false);
     get().resolvePrompt(null);
-    set({ editor: null, generator: null, keepassImportOpen: false, settingsOpen: null, changePasswordOpen: false, paletteOpen: false, shortcutsOpen: false, revealed: new Set() });
+    set({ view: 'items', editor: null, generator: null, keepassImportOpen: false, settingsOpen: null, changePasswordOpen: false, paletteOpen: false, shortcutsOpen: false, revealed: new Set() });
   },
 }));

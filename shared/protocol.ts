@@ -29,6 +29,30 @@ export interface UpdateStatus {
   releaseUrl?: string;
 }
 
+/**
+ * One row in the quick-access window. The window never holds the vault: it gets titles and user names to show, and
+ * asks the main window (which holds the key) to copy a secret by entry id.
+ */
+export interface QuickResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  kind: 'login' | 'card' | 'note' | 'wifi';
+  /** For the avatar colour. */
+  host: string;
+  hasUsername: boolean;
+  hasPassword: boolean;
+  hasTotp: boolean;
+  hasUrl: boolean;
+}
+
+export type QuickAnswer = { locked: true } | { locked: false; vaultName: string; results: QuickResult[] };
+
+export type QuickAction = 'password' | 'username' | 'totp' | 'open';
+
+/** What the main process asks the main window on behalf of the quick-access window. */
+export type QuickRequest = { kind: 'search'; query: string } | { kind: 'act'; entryId: string; action: QuickAction };
+
 export interface TextFileFilter {
   name: string;
   extensions: string[];

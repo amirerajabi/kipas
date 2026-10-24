@@ -1,7 +1,7 @@
 // Preload (sandboxed): exposes `window.kipas`, the only bridge between the UI and Electron. Every value is coerced to the
 // type main expects; main validates again.
 import { contextBridge, ipcRenderer } from 'electron';
-import type { SystemEvent, TextFileFilter, UpdateStatus } from '../../../shared/protocol';
+import type { QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus } from '../../../shared/protocol';
 import { ARG, CH } from '../shared/channels';
 
 function arg(prefix: string): string {
@@ -40,5 +40,23 @@ contextBridge.exposeInMainWorld('kipas', {
   installUpdate: (): Promise<boolean> => ipcRenderer.invoke(CH.updateInstall),
   setAutoUpdate: (on: boolean) => ipcRenderer.send(CH.setAutoUpdate, !!on),
   onUpdateStatus: (cb: (status: UpdateStatus) => void) => subscribe<UpdateStatus>(CH.updateStatus, cb),
+  isQuickWindow: process.argv.includes(ARG.quick),
+  setQuickAccess: (on: boolean) => ipcRenderer.send(CH.setQuickAccess, !!on),
+  quickSearch: (query: string): Promise<QuickAnswer> => ipcRenderer.invoke(CH.quickSearch, String(query)),
+  quickAct: (entryId: string, action: QuickAction): Promise<boolean> => ipcRenderer.invoke(CH.quickAct, String(entryId), String(action)),
+  quickHide: () => ipcRenderer.send(CH.quickHide),
+  quickShowMain: () => ipcRenderer.send(CH.quickShowMain),
+  onQuickShown: (cb: () => void) => subscribe<void>(CH.quickShown, () => cb()),
+  // Main window only: answer the quick window's questions (the reply goes back through main).
+  onQuickRequest: (handler: (req: QuickRequest) => unknown) => {
+    const listener = (_e: unknown, id: number, req: QuickRequest) => {
+      void Promise.resolve()
+        .then(() => handler(req))
+        .catch(() => null)
+        .then((answer) => ipcRenderer.send(CH.quickReply, id, answer));
+    };
+    ipcRenderer.on(CH.quickRequest, listener);
+    return () => ipcRenderer.removeListener(CH.quickRequest, listener);
+  },
   onCommand: (cb: (command: string) => void) => subscribe<string>(CH.command, cb),
 });

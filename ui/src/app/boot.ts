@@ -1,12 +1,12 @@
 // Start-up wiring that is not a component: auto-lock on idle and on OS events, clean-up when the vault locks, and a
-// last save before the window closes.
+// last save before the window closes, and answering the quick-access window.
 import { getPlatform } from '../platform';
-import { useList } from '../store/list';
+import { quickResults, useList } from '../store/list';
 import { useSettings } from '../store/settings';
 import { useUi } from '../store/ui';
 import { useUpdates } from '../store/updates';
 import { useVault } from '../store/vault';
-import { lockVault } from './actions';
+import { copyText, copyTotp, lockVault, openUrl } from './actions';
 
 let lastActivity = Date.now();
 
@@ -38,6 +38,24 @@ export function boot(): () => void {
   platform.setAutoUpdate(useSettings.getState().settings.autoUpdate);
   const offAutoUpdate = useSettings.subscribe((s, prev) => {
     if (s.settings.autoUpdate !== prev.settings.autoUpdate) platform.setAutoUpdate(s.settings.autoUpdate);
+  });
+
+  // Quick access: the small window asks; this window, which holds the vault, searches and copies.
+  platform.setQuickAccess(useSettings.getState().settings.quickAccess);
+  const offQuickSetting = useSettings.subscribe((s, prev) => {
+    if (s.settings.quickAccess !== prev.settings.quickAccess) platform.setQuickAccess(s.settings.quickAccess);
+  });
+  const offQuick = platform.onQuickRequest(async (req) => {
+    const data = useVault.getState().data;
+    if (req.kind === 'search') return data ? { locked: false, vaultName: data.name, results: quickResults(data, req.query) } : { locked: true };
+    const entry = data?.entries.find((e) => e.id === req.entryId && !e.trashed);
+    if (!entry) return false;
+    if (req.action === 'password' && entry.password) copyText(entry.password, 'Password');
+    else if (req.action === 'username' && entry.username) copyText(entry.username, 'User name', false);
+    else if (req.action === 'totp') await copyTotp(entry);
+    else if (req.action === 'open') openUrl(entry);
+    else return false;
+    return true;
   });
 
   const offSystem = getPlatform().onSystemEvent((e) => {
@@ -73,6 +91,8 @@ export function boot(): () => void {
     offSystem();
     offUpdates();
     offAutoUpdate();
+    offQuickSetting();
+    offQuick();
     offVault();
     window.removeEventListener('beforeunload', beforeUnload);
   };
