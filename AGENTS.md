@@ -1,7 +1,7 @@
 # Kipas — guide for coding agents
 
-Kipas is a KeePass-style offline password manager: Electron desktop app + React UI. Its structure and look follow
-Grabbit (`C:\Users\AMIR\Desktop\DownloadManager`), which follows Rowlit. Read [docs/STATUS.md](docs/STATUS.md) first.
+Kipas is a KeePass-style offline password manager: Electron desktop app + React UI. Read [docs/STATUS.md](docs/STATUS.md)
+first.
 
 ## Commands
 

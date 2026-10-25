@@ -1,4 +1,4 @@
-/* Kipas app styles (Grabbit/Rowlit shell language). Colours, font sizes and weights only via tokens.css. */
+/* Kipas app styles: the shell (title bar, panels, dialogs, menus). Colours, font sizes and weights only via tokens.css. */
 *,
 *::before,
 *::after {

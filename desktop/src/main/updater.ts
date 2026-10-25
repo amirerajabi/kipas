@@ -1,5 +1,5 @@
 // In-app updates through GitHub Releases (electron-updater reads latest.yml / latest-mac.yml / latest-linux.yml from the
-// release that .github/workflows/release.yml publishes). Same flow as Rowlit's updater:
+// release that .github/workflows/release.yml publishes):
 //
 //   idle --check--> checking --> up-to-date
 //                            \-> install mode: downloading --> ready   (Windows, AppImage, signed macOS: Restart now)

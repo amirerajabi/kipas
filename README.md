@@ -1,15 +1,15 @@
 # Kipas
 
 A modern, friendly password manager in the spirit of KeePass: your passwords live in **one encrypted file on your
-device**. No account, no cloud, no tracking. Electron + React, with the same shell as
-[Grabbit](https://github.com/amirerajabi/grabbit).
+device**. No account, no cloud, no tracking. Built with Electron and React.
 
 ## Features
 
 - **Vaults are files** (`.kipas`). Keep several, back them up by copying, sync them with any folder sync.
 - **Strong encryption:** AES-256-GCM, key from PBKDF2-SHA256 (600 000 rounds) with a random salt, fresh nonce on every
   save, authenticated header. Atomic saves with a `.bak` of the previous version.
-- **Logins, cards, secure notes and Wi-Fi**, with custom (optionally hidden) fields, tags, favourites, groups and a trash.
+- **Logins, cards, secure notes and Wi-Fi**, with custom (optionally hidden) fields, tags, favourites, groups inside groups (drag to
+  nest them) and a trash.
 - **Two-factor codes (TOTP)** built in: paste the setup key or `otpauth://` link and Kipas shows the live code.
 - **Password generator**: random passwords or easy-to-type passphrases, with entropy shown.
 - **Password health**: weak, reused and old passwords, and websites without two-factor, checked on your device only.
@@ -17,7 +17,7 @@ device**. No account, no cloud, no tracking. Electron + React, with the same she
 - **Auto-lock** after idle time, when the computer locks or sleeps, and optionally on minimize.
 - **Password history** per entry, so an accidental change can be undone.
 - **Import KeePass databases** (`.kdbx`, KDBX 3.1 and 4.x from KeePass 2, KeePassXC, KeeWeb, Strongbox) directly, with
-  their password and key file: groups, custom fields, two-factor secrets, password history and the recycle bin come along.
+  their password and key file: the group tree, custom fields, two-factor secrets, password history and the recycle bin come along.
 - **Import** CSV from KeePass, KeePassXC, Bitwarden, 1Password, LastPass, Chrome, Edge, Firefox. **Export** to CSV.
 - **Auto-type (Windows)**: Ctrl+V on an item types it into the window you came from, by default user name, Tab,
   password, Enter. Change the sequence for all items (Settings) or one item (Edit), e.g. `{USERNAME}{TAB 2}{PASSWORD}`.
