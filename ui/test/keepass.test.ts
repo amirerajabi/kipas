@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { emptyVault } from '../src/vault/model';
 import { argon2, blake2b } from '../src/vault/keepass/argon2';
-import { importKeePass, totpFrom } from '../src/vault/keepass/import';
+import { fromKeePassXml, importKeePass, keepassSequence, totpFrom } from '../src/vault/keepass/import';
 import { KdbxFormatError, KdbxKeyError, keyFileKey } from '../src/vault/keepass/kdbx';
 import { ChaCha20, Salsa20 } from '../src/vault/keepass/streams';
 import { parseXml } from '../src/vault/keepass/xml';
@@ -70,6 +70,20 @@ describe('keepass primitives', () => {
     assert.equal(totpFrom(m({ otp: 'key=JBSWY3DP&size=6&step=30' }), 't', 'u'), 'JBSWY3DP');
     assert.match(totpFrom(m({ 'TOTP Seed': 'JBSWY3DP', 'TOTP Settings': '60;6' }), 't', 'u'), /period=60/);
     assert.equal(totpFrom(m({}), 't', 'u'), '');
+  });
+
+  it('keeps KeePass auto-type sequences Kipas types the same way, inherited from groups', () => {
+    assert.equal(keepassSequence('{USERNAME}{TAB}{PASSWORD}{ENTER}'), '{USERNAME}{TAB}{PASSWORD}{ENTER}');
+    assert.equal(keepassSequence('{USERNAME}{TAB}^v'), '', 'KeePass modifiers fall back to the default');
+    assert.equal(keepassSequence('{CLEARFIELD}{PASSWORD}'), '', 'unknown placeholders too');
+    const xml = parseXml(`<KeePassFile><Meta/><Root><Group><Name>Root</Name><DefaultAutoTypeSequence>{USERNAME}{TAB 2}{PASSWORD}</DefaultAutoTypeSequence>
+      <Entry><String><Key>Title</Key><Value>Inherits</Value></String><String><Key>Password</Key><Value>a</Value></String></Entry>
+      <Group><Name>Web</Name><Entry><String><Key>Title</Key><Value>Own</Value></String><String><Key>Password</Key><Value>b</Value></String>
+        <AutoType><Enabled>True</Enabled><DefaultSequence>{PASSWORD}{ENTER}</DefaultSequence></AutoType></Entry></Group>
+    </Group></Root></KeePassFile>`);
+    const r = fromKeePassXml(xml, { groups: [] });
+    assert.equal(r.entries.find((e) => e.title === 'Inherits')?.autoType, '{USERNAME}{TAB 2}{PASSWORD}');
+    assert.equal(r.entries.find((e) => e.title === 'Own')?.autoType, '{PASSWORD}{ENTER}');
   });
 
   it('understands every key file format', async () => {

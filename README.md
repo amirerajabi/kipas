@@ -19,6 +19,9 @@ device**. No account, no cloud, no tracking. Electron + React, with the same she
 - **Import KeePass databases** (`.kdbx`, KDBX 3.1 and 4.x from KeePass 2, KeePassXC, KeeWeb, Strongbox) directly, with
   their password and key file: groups, custom fields, two-factor secrets, password history and the recycle bin come along.
 - **Import** CSV from KeePass, KeePassXC, Bitwarden, 1Password, LastPass, Chrome, Edge, Firefox. **Export** to CSV.
+- **Auto-type (Windows)**: Ctrl+V on an item types it into the window you came from, by default user name, Tab,
+  password. Change the sequence for all items (Settings) or one item (Edit), e.g. `{USERNAME}{TAB 2}{PASSWORD}{ENTER}`.
+  Ctrl+B copies the user name, Ctrl+C the password.
 - **Quick access**: Ctrl+Shift+Space opens a small search over any app; Enter copies the password, Ctrl+B the user
   name, Ctrl+T the one-time code. It never holds the vault: the main window does the copying.
 - **Keyboard first**: command palette (Ctrl+K, Ctrl+Enter copies a result's password), KeePass shortcuts (Ctrl+B user
@@ -37,7 +40,8 @@ macOS Apple silicon (`.dmg`) or Linux (`.AppImage`). Installed copies update the
 npm run setup        # npm install in ui and desktop
 npm run dev          # the UI in a browser on http://localhost:5174 (vaults in localStorage, for development)
 npm run dev:desktop  # Vite + Electron
-npm test             # vault core tests (crypto, TOTP, generator, CSV, health)
+npm test             # vault core tests (crypto, TOTP, generator, CSV, health, auto-type, KeePass)
+npm run test:autotype  # Windows: types into a throwaway test window with the real helper
 npm run typecheck
 npm run build
 npm start            # build, then launch Electron

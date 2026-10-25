@@ -1206,3 +1206,20 @@ label.notice input {
   background: var(--bg-panel);
   font-family: var(--font-ui);
 }
+
+/* ---------- auto-type sequence ---------- */
+.sequence-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sequence-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sequence-tokens .chip {
+  height: 22px;
+  padding: 0 8px;
+  font-size: var(--text-xs);
+}

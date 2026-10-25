@@ -6,6 +6,7 @@ import { useUi } from '../store/ui';
 import { useVault } from '../store/vault';
 import { exportCsv, importCsv } from '../vault/csv';
 import { blankEntry, openableUrl, type Entry, type EntryKind } from '../vault/model';
+import { AutoTypeError, buildSteps, needsTotp, sequenceFor } from '../vault/autotype';
 import { parseTotp, totpNow } from '../vault/totp';
 
 export function toastError(text: string, e: unknown): void {
@@ -177,4 +178,37 @@ export async function exportToCsv(): Promise<void> {
   } catch (e) {
     toastError('Could not export', e);
   }
+}
+
+const AUTOTYPE_FAILED: Record<string, string> = {
+  'no-target': 'No other window came to the front, so nothing was typed. Click into the login form first, then come back and press Ctrl+V.',
+  'focus-lost': 'The window changed while typing, so Kipas stopped.',
+  unsupported: 'Auto-type works in the Windows app for now. Copy the user name (Ctrl+B) and password (Ctrl+C) instead.',
+  failed: 'The typing helper did not run.',
+};
+
+/**
+ * KeePass's Ctrl+V: type the entry into the window you were in before Kipas, following its auto-type sequence (its own,
+ * or the default from Settings), e.g. user name, Tab, password.
+ */
+export async function autoTypeEntry(e: Entry): Promise<boolean> {
+  try {
+    const sequence = sequenceFor(e, useSettings.getState().settings.autoTypeSequence);
+    const spec = needsTotp(sequence) ? parseTotp(e.totp) : null;
+    const steps = buildSteps(sequence, {
+      title: e.title,
+      username: e.username,
+      password: e.password,
+      url: e.url,
+      totp: spec ? (await totpNow(spec)).code : '',
+      fields: e.fields,
+    });
+    const result = await getPlatform().autoType(steps);
+    if (result === 'ok') return true;
+    useUi.getState().toast({ level: result === 'unsupported' ? 'info' : 'warning', text: 'Auto-type did not run', detail: AUTOTYPE_FAILED[result] });
+  } catch (err) {
+    if (err instanceof AutoTypeError) useUi.getState().toast({ level: 'warning', text: `Cannot auto-type "${e.title || 'this item'}"`, detail: err.message });
+    else toastError('Auto-type failed', err);
+  }
+  return false;
 }

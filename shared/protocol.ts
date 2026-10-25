@@ -48,7 +48,18 @@ export interface QuickResult {
 
 export type QuickAnswer = { locked: true } | { locked: false; vaultName: string; results: QuickResult[] };
 
-export type QuickAction = 'password' | 'username' | 'totp' | 'open';
+export type QuickAction = 'password' | 'username' | 'totp' | 'open' | 'autotype';
+
+export type AutoTypeKey = 'tab' | 'enter' | 'space' | 'backspace' | 'delete' | 'esc' | 'up' | 'down' | 'left' | 'right' | 'home' | 'end';
+
+/** One thing auto-type does in the target window. Built in the renderer from a sequence; typed by the desktop app. */
+export type AutoTypeStep = { t: 'text'; v: string } | { t: 'key'; v: AutoTypeKey } | { t: 'delay'; v: number };
+
+/**
+ * ok: typed. no-target: no other window came to the front to type into (nothing was typed). focus-lost: the window
+ * changed while typing, so Kipas stopped. unsupported: not on this system yet. failed: the typing helper failed.
+ */
+export type AutoTypeResult = 'ok' | 'no-target' | 'focus-lost' | 'unsupported' | 'failed';
 
 /** What the main process asks the main window on behalf of the quick-access window. */
 export type QuickRequest = { kind: 'search'; query: string } | { kind: 'act'; entryId: string; action: QuickAction };

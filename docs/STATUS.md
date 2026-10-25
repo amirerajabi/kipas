@@ -2,6 +2,10 @@
 
 ## Released
 
+- **v1.3.0** (2026-10-25): auto-type. Notes: [release-notes/v1.3.0.md](release-notes/v1.3.0.md).
+  - **Auto-type (Ctrl+V, Windows):** KeePass-style sequences, a default in Settings and one per item; KeePass imports keep
+    their sequences. The typing helper passes `npm run test:autotype` (real SendInput into a test window, Unicode and
+    special characters exact). The full Ctrl+V flow from the Kipas window into another app was not pressed by hand.
 - **v1.2.0** (2026-10-24): new three-column layout and quick access. Notes: [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
   - **New layout:** three columns (vault tree | items | details) in place of Grabbit's toolbar, table and status bar. The
     side panel's footer carries Health, saving, clipboard, update and auto-lock; Health is a page of its own (Ctrl+H).

@@ -6,7 +6,7 @@ import { useSettings } from '../store/settings';
 import { useUi } from '../store/ui';
 import { useUpdates } from '../store/updates';
 import { useVault } from '../store/vault';
-import { copyText, copyTotp, lockVault, openUrl } from './actions';
+import { autoTypeEntry, copyText, copyTotp, lockVault, openUrl } from './actions';
 
 let lastActivity = Date.now();
 
@@ -54,6 +54,7 @@ export function boot(): () => void {
     else if (req.action === 'username' && entry.username) copyText(entry.username, 'User name', false);
     else if (req.action === 'totp') await copyTotp(entry);
     else if (req.action === 'open') openUrl(entry);
+    else if (req.action === 'autotype') return autoTypeEntry(entry);
     else return false;
     return true;
   });

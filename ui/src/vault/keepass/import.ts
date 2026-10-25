@@ -2,6 +2,7 @@
 // entries in the recycle bin land in Kipas's trash, history becomes password history, and every extra string field is
 // kept (hidden if KeePass protected it). Two-factor secrets are read from KeePass 2.47+ (TimeOtp-*), KeePassXC (otp)
 // and the older KeeOtp / KeeTrayTOTP fields. Attachments are not imported (Kipas has no attachments yet); they are counted.
+import { parseSequence } from '../autotype';
 import { blankEntry, HISTORY_LIMIT, newId, type CustomField, type Entry, type Group, type VaultData } from '../model';
 import { readKdbx, type KdbxCredentials, type KdbxProgress } from './kdbx';
 import { child, children, textOf, type XmlNode } from './xml';
@@ -114,7 +115,22 @@ function readVersion(e: XmlNode, now: number): Version {
   return { strings, protectedKeys, created, modified: parseTime(textOf(times, 'LastModificationTime'), created) };
 }
 
-function toEntry(e: XmlNode, groupId: string | null, trashedAt: number | null, now: number): { entry: Entry; attachments: number } {
+/**
+ * A KeePass auto-type sequence Kipas can type the same way, else ''. KeePass reads + ^ % ~ outside braces as Shift,
+ * Ctrl, Alt and Enter; Kipas would type them as characters, so such a sequence falls back to the default instead.
+ */
+export function keepassSequence(seq: string): string {
+  const s = seq.trim();
+  if (!s || /[+^%~]/.test(s.replace(/\{[^}]*\}/g, ''))) return '';
+  try {
+    parseSequence(s);
+    return s;
+  } catch {
+    return '';
+  }
+}
+
+function toEntry(e: XmlNode, groupId: string | null, trashedAt: number | null, now: number, groupSequence = ''): { entry: Entry; attachments: number } {
   const cur = readVersion(e, now);
   const s = cur.strings;
   const username = s.get('UserName') ?? '';
@@ -139,6 +155,8 @@ function toEntry(e: XmlNode, groupId: string | null, trashedAt: number | null, n
   entry.created = cur.created;
   entry.modified = cur.modified;
   entry.trashed = trashedAt;
+  // The entry's own sequence, else the one its group (or a parent group) sets.
+  entry.autoType = keepassSequence(textOf(child(e, 'AutoType'), 'DefaultSequence')) || keepassSequence(groupSequence);
 
   // History: versions oldest first, then the current one. A password "changed" when the next version has a different one.
   const versions = [...children(child(e, 'History'), 'Entry').map((h) => readVersion(h, now)), cur].sort((a, b) => a.modified - b.modified);
@@ -180,21 +198,22 @@ export function fromKeePassXml(xml: XmlNode, vault: Pick<VaultData, 'groups'>, n
 
   const entries: Entry[] = [];
   let attachments = 0;
-  const walk = (g: XmlNode, path: string, trashedAt: number | null) => {
+  const walk = (g: XmlNode, path: string, trashedAt: number | null, parentSequence: string) => {
     const groupId = groupFor(path);
+    const sequence = textOf(g, 'DefaultAutoTypeSequence').trim() || parentSequence;
     for (const e of children(g, 'Entry')) {
-      const r = toEntry(e, trashedAt ? null : groupId, trashedAt, now);
+      const r = toEntry(e, trashedAt ? null : groupId, trashedAt, now, sequence);
       entries.push(r.entry);
       attachments += r.attachments;
     }
     for (const sub of children(g, 'Group')) {
       const isBin = !!binUuid && textOf(sub, 'UUID') === binUuid;
       const name = textOf(sub, 'Name').trim() || 'Group';
-      walk(sub, isBin || trashedAt ? '' : path ? `${path} / ${name}` : name, isBin ? now : trashedAt);
+      walk(sub, isBin || trashedAt ? '' : path ? `${path} / ${name}` : name, isBin ? now : trashedAt, sequence);
     }
   };
   // The root group is the database itself: its entries get no group.
-  walk(rootGroup, '', null);
+  walk(rootGroup, '', null, '');
   // A group that only held trashed entries was never created; groups made for nothing are dropped.
   const used = new Set(entries.map((e) => e.groupId));
   return {

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { DEFAULT_AUTOTYPE } from '../vault/autotype';
 import { DEFAULT_GENERATOR, type GeneratorOptions } from '../vault/generator';
 
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -19,6 +20,8 @@ export interface Settings {
   autoUpdate: boolean;
   /** Ctrl+Shift+Space opens the quick-access window over any app (desktop app). */
   quickAccess: boolean;
+  /** What Ctrl+V types into the previous window, for entries without their own sequence. */
+  autoTypeSequence: string;
   generator: GeneratorOptions;
 }
 
@@ -30,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lockOnSystemLock: true,
   autoUpdate: true,
   quickAccess: true,
+  autoTypeSequence: DEFAULT_AUTOTYPE,
   generator: DEFAULT_GENERATOR,
 };
 

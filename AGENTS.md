@@ -37,6 +37,9 @@ A change is done when `npm run typecheck`, `npm test` and `npm run build` pass. 
 - The quick-access window (`desktop/src/main/quick.ts`, `ui/src/quick/`) never gets vault data beyond `quickResults()` in
   `ui/src/store/list.ts` (titles, user names, hosts; never notes or secrets). It asks the main window to copy by entry id.
   `KIPAS_SMOKE_QUICK=1` with `KIPAS_SMOKE_SHOT` captures it.
+- Auto-type (`ui/src/vault/autotype.ts` builds steps, `desktop/src/main/autotype.ts` types them with PowerShell +
+  SendInput): secrets go to the helper on stdin, never argv or logs, and it stops if the front window changes. Test the
+  typing with `npm run test:autotype` (it types only into its own test window); never test against a real app.
 - The desktop bridge is `desktop/src/preload/preload.ts` (`window.kipas`); main validates every value
   (`checkVaultPath`, sealed-vault check before writing). Types crossing it live in `shared/protocol.ts`.
 - Keep dependencies minimal (React, zustand, lucide; Electron). Ask before adding a package.

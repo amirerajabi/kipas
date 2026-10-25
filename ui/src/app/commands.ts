@@ -22,6 +22,7 @@ import {
   Star,
   StickyNote,
   SunMoon,
+  TextCursorInput,
   Timer,
   Trash2,
   Upload,
@@ -50,6 +51,7 @@ import {
   exportToCsv,
   importFromCsv,
   lockVault,
+  autoTypeEntry,
   newEntry,
   newGroup,
   openUrl,
@@ -104,6 +106,14 @@ export const COMMANDS: Command[] = [
     shortcut: 'Mod+C',
     disabled: one((e) => (e.password ? null : 'This item has no password')),
     run: () => copyText(current()!.password, 'Password'),
+  },
+  {
+    id: 'entry.autoType',
+    label: 'Auto-type into the previous window',
+    icon: TextCursorInput,
+    shortcut: 'Mod+V',
+    disabled: one((e) => (e.trashed ? 'Restore it from the trash first' : e.username || e.password ? null : 'This item has nothing to type')),
+    run: () => autoTypeEntry(current()!),
   },
   {
     id: 'entry.copyTotp',
@@ -236,7 +246,7 @@ function modalOpen(): boolean {
  * Global shortcuts. List-only keys (Enter, Delete, Mod+A, Mod+C) fire only while focus is in the entry list, so they
  * keep their usual meaning in text fields; Mod+C also yields to a text selection.
  */
-const LIST_ONLY = new Set(['entry.edit', 'entry.delete', 'entry.selectAll', 'entry.copyPassword']);
+const LIST_ONLY = new Set(['entry.edit', 'entry.delete', 'entry.selectAll', 'entry.copyPassword', 'entry.autoType']);
 
 export function installKeyboard(): () => void {
   const onKey = (e: KeyboardEvent) => {

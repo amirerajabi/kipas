@@ -1,4 +1,4 @@
-import type { QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
+import type { AutoTypeResult, AutoTypeStep, QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
 
 /**
  * What the UI needs from its host. In Electron the preload script exposes `window.kipas`; in a plain browser
@@ -35,6 +35,8 @@ export interface DesktopBridge {
   installUpdate(): Promise<boolean>;
   setAutoUpdate(on: boolean): void;
   onUpdateStatus(cb: (status: UpdateStatus) => void): () => void;
+  /** Type the steps into the window the user came from (Kipas steps aside first). */
+  autoType(steps: AutoTypeStep[]): Promise<AutoTypeResult>;
   /** This renderer is the quick-access window (#quick), not the main window. */
   isQuickWindow: boolean;
   /** Turn the global quick-access shortcut on or off. */
@@ -160,6 +162,7 @@ function browserPlatform(): Platform {
     installUpdate: async () => false,
     setAutoUpdate: noop,
     onUpdateStatus: () => noop,
+    autoType: async () => 'unsupported',
     isQuickWindow: false,
     setQuickAccess: noop,
     quickSearch: async () => ({ locked: true }),

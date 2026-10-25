@@ -9,8 +9,10 @@ import type { QuickAction, QuickAnswer, QuickRequest } from '../../../shared/pro
 import { CH, QUICK_SHORTCUT } from '../shared/channels';
 import { createQuickWindow, QUICK_SIZE } from './window';
 
-const ACTIONS = new Set<QuickAction>(['password', 'username', 'totp', 'open']);
+const ACTIONS = new Set<QuickAction>(['password', 'username', 'totp', 'open', 'autotype']);
 const ASK_TIMEOUT_MS = 3000;
+/** Auto-type starts PowerShell and types with small pauses: allow it time. */
+const ACT_TIMEOUT_MS = 30_000;
 
 export class QuickAccess {
   private win: BrowserWindow | null = null;
@@ -34,7 +36,7 @@ export class QuickAccess {
     });
     ipcMain.handle(CH.quickAct, async (e, entryId: unknown, action: unknown) => {
       if (!fromQuick(e) || typeof entryId !== 'string' || entryId.length > 64 || !ACTIONS.has(action as QuickAction)) return false;
-      const ok = await this.ask({ kind: 'act', entryId, action: action as QuickAction }, false);
+      const ok = await this.ask({ kind: 'act', entryId, action: action as QuickAction }, false, ACT_TIMEOUT_MS);
       if (ok === true) this.hide();
       return ok === true;
     });
@@ -108,7 +110,7 @@ export class QuickAccess {
   }
 
   /** Ask the main window; a missing or silent main window gets `fallback`. */
-  private ask(req: QuickRequest, fallback: unknown): Promise<unknown> {
+  private ask(req: QuickRequest, fallback: unknown, timeoutMs = ASK_TIMEOUT_MS): Promise<unknown> {
     const main = this.mainWindow();
     if (!main || main.isDestroyed()) return Promise.resolve(fallback);
     const id = this.nextId++;
@@ -116,7 +118,7 @@ export class QuickAccess {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         resolve(fallback);
-      }, ASK_TIMEOUT_MS);
+      }, timeoutMs);
       this.pending.set(id, (value) => {
         clearTimeout(timer);
         resolve(value);

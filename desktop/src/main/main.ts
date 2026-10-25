@@ -6,6 +6,7 @@ import { promises as fs, writeFileSync } from 'node:fs';
 import * as path from 'node:path';
 import type { SystemEvent, TextFileFilter } from '../../../shared/protocol';
 import { CH } from '../shared/channels';
+import { checkSteps, runAutoType } from './autotype';
 import { checkVaultPath, readVault, statVault, VAULT_EXT, writeVault } from './files';
 import { QuickAccess } from './quick';
 import { Updater } from './updater';
@@ -206,6 +207,15 @@ function installIpc(): void {
     return updater.quitAndInstall();
   });
   ipcMain.on(CH.setAutoUpdate, (_e, on: unknown) => updater?.configure(on !== false));
+  // Auto-type: only the main window holds the vault, so only it may ask. Step aside first (hide the quick window, and
+  // minimize the main window if it is the one in front) so the app the user came from is in front again.
+  ipcMain.handle(CH.autoType, (e, raw: unknown) => {
+    if (e.sender !== win?.webContents) return 'failed';
+    const steps = checkSteps(raw);
+    quick?.hide();
+    if (win.isFocused()) win.minimize();
+    return runAutoType(steps, { cacheDir: path.join(app.getPath('userData'), 'autotype'), selfPid: process.pid });
+  });
   ipcMain.on(CH.setQuickAccess, (e, on: unknown) => e.sender === win?.webContents && quick?.configure(on === true));
 }
 

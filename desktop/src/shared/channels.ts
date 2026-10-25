@@ -21,6 +21,7 @@ export const CH = {
   updateCheck: 'kipas:update-check',
   updateInstall: 'kipas:update-install',
   setAutoUpdate: 'kipas:set-auto-update',
+  autoType: 'kipas:auto-type',
   // Quick-access window: it asks main, main asks the main window (which holds the vault) and relays the answer.
   setQuickAccess: 'kipas:set-quick-access',
   quickSearch: 'kipas:quick-search',

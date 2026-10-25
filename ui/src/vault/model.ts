@@ -28,6 +28,8 @@ export interface Entry {
   notes: string;
   /** Base32 secret or an otpauth:// URI; '' when the entry has no two-factor code. */
   totp: string;
+  /** Auto-type sequence for this entry, like "{USERNAME}{TAB}{PASSWORD}"; '' uses the default from Settings. */
+  autoType: string;
   tags: string[];
   favorite: boolean;
   fields: CustomField[];
@@ -87,6 +89,7 @@ export function blankEntry(kind: EntryKind = 'login', groupId: string | null = n
     url: '',
     notes: '',
     totp: '',
+    autoType: '',
     tags: [],
     favorite: false,
     fields: kindFields(kind),
@@ -153,6 +156,7 @@ export function normalizeVault(raw: unknown): VaultData {
         url: str(e.url),
         notes: str(e.notes),
         totp: str(e.totp),
+        autoType: str(e.autoType),
         tags: Array.isArray(e.tags) ? e.tags.filter((t): t is string => typeof t === 'string') : [],
         favorite: e.favorite === true,
         fields: (Array.isArray(e.fields) ? e.fields : []).map((f) => {

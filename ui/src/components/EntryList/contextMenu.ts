@@ -1,5 +1,5 @@
-import { ArchiveRestore, Copy, Folder, FolderInput, FolderMinus, KeyRound, Pencil, SquareArrowOutUpRight, Star, Timer, Trash2, User } from 'lucide-react';
-import { copyText, copyTotp, deleteEntries, duplicate, editEntry, openUrl, selectedEntries } from '../../app/actions';
+import { ArchiveRestore, Copy, Folder, FolderInput, FolderMinus, KeyRound, Pencil, SquareArrowOutUpRight, Star, TextCursorInput, Timer, Trash2, User } from 'lucide-react';
+import { autoTypeEntry, copyText, copyTotp, deleteEntries, duplicate, editEntry, openUrl, selectedEntries } from '../../app/actions';
 import { useList } from '../../store/list';
 import { useVault } from '../../store/vault';
 import { openableUrl, type Entry } from '../../vault/model';
@@ -27,6 +27,7 @@ export function entryMenu(x: number, y: number, entry: Entry): void {
   };
   const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
   const items: MenuItem[] = [
+    { label: 'Auto-type', icon: TextCursorInput, shortcut: 'Mod+V', disabled: many || (!entry.username && !entry.password), run: () => autoTypeEntry(entry) },
     { label: 'Copy user name', icon: User, shortcut: 'Mod+B', disabled: many || !entry.username, run: () => copyText(entry.username, 'User name', false) },
     { label: 'Copy password', icon: KeyRound, shortcut: 'Mod+C', disabled: many || !entry.password, run: () => copyText(entry.password, 'Password') },
     { label: 'Copy one-time code', icon: Timer, shortcut: 'Mod+T', disabled: many || !parseTotp(entry.totp), run: () => copyTotp(entry) },

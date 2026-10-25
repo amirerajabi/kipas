@@ -8,7 +8,7 @@ import { useTheme } from '../theme/theme';
 /**
  * The quick-access window (#quick): type, pick, copy, gone. It holds no vault data beyond the rows it shows; the main
  * window does the copying. Enter copies the password, Ctrl+B the user name, Ctrl+T the one-time code, Ctrl+U opens
- * the site, Esc closes.
+ * the site, Ctrl+V auto-types into the app underneath, Esc closes.
  */
 export function QuickApp() {
   useTheme();
@@ -70,6 +70,9 @@ export function QuickApp() {
     } else if (mod && e.key.toLowerCase() === 't') {
       e.preventDefault();
       act(results[active], 'totp');
+    } else if (mod && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      act(results[active], 'autotype');
     } else if (mod && e.key.toLowerCase() === 'u') {
       e.preventDefault();
       act(results[active], 'open');
@@ -122,6 +125,9 @@ export function QuickApp() {
       <div className="quick-footer muted">
         <span>
           <kbd>↵</kbd> password
+        </span>
+        <span className={current?.hasUsername || current?.hasPassword ? '' : 'off'}>
+          <kbd>Ctrl V</kbd> type it
         </span>
         <span className={current?.hasUsername ? '' : 'off'}>
           <kbd>Ctrl B</kbd> user name

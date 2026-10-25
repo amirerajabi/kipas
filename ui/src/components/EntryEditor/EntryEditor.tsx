@@ -1,12 +1,14 @@
 import { Plus, Star, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useList } from '../../store/list';
+import { useSettings } from '../../store/settings';
 import { useUi, type EditorState } from '../../store/ui';
 import { useVault } from '../../store/vault';
 import { blankEntry, hostOf, KIND_LABEL, KINDS, newId, type Entry } from '../../vault/model';
 import { parseTotp } from '../../vault/totp';
 import { Dialog, Field } from '../common/Dialog';
 import { SecretInput } from '../common/SecretInput';
+import { SequenceInput, sequenceProblem } from '../common/SequenceInput';
 import { KindIcon, StrengthMeter } from '../common/visuals';
 
 /** New and edit, in one dialog. Fields adapt to the kind: a note has no password, a card has its numbers. */
@@ -26,6 +28,7 @@ function Editor({ editor }: { editor: EditorState }) {
   const [draft, setDraft] = useState<Entry | null>(start);
   const [tags, setTags] = useState(start?.tags.join(', ') ?? '');
   const groups = useVault((s) => s.data?.groups ?? []);
+  const defaultSequence = useSettings((s) => s.settings.autoTypeSequence);
   if (!draft || !start) return null;
 
   const isNew = editor.mode === 'new';
@@ -33,6 +36,7 @@ function Editor({ editor }: { editor: EditorState }) {
   const kind = draft.kind;
   const hasLogin = kind === 'login' || kind === 'wifi';
   const totpBad = draft.totp.trim() !== '' && !parseTotp(draft.totp);
+  const autoTypeBad = !!sequenceProblem(draft.autoType, true);
   const tagList = tags.split(',').map((t) => t.trim()).filter(Boolean);
   const title = draft.title.trim() || hostOf(draft.url);
   const empty = !title && !draft.username && !draft.password && !draft.notes.trim();
@@ -47,8 +51,8 @@ function Editor({ editor }: { editor: EditorState }) {
   };
 
   const save = () => {
-    if (empty || totpBad) return;
-    const final: Entry = { ...draft, title: title || 'Untitled', tags: tagList, totp: draft.totp.trim(), fields: draft.fields.filter((f) => f.name.trim() || f.value) };
+    if (empty || totpBad || autoTypeBad) return;
+    const final: Entry = { ...draft, title: title || 'Untitled', tags: tagList, totp: draft.totp.trim(), autoType: draft.autoType.trim(), fields: draft.fields.filter((f) => f.name.trim() || f.value) };
     if (isNew) {
       useVault.getState().addEntry(final);
       useUi.getState().toast({ level: 'success', text: `Saved "${final.title}"` });
@@ -82,7 +86,7 @@ function Editor({ editor }: { editor: EditorState }) {
           <button className="btn" onClick={() => void close()}>
             Cancel
           </button>
-          <button className="btn btn-primary" onClick={save} disabled={empty || totpBad} title={empty ? 'Give it a title first' : undefined}>
+          <button className="btn btn-primary" onClick={save} disabled={empty || totpBad || autoTypeBad} title={empty ? 'Give it a title first' : undefined}>
             {isNew ? 'Save' : 'Save changes'}
           </button>
         </>
@@ -177,6 +181,11 @@ function Editor({ editor }: { editor: EditorState }) {
           </button>
         </div>
 
+        {hasLogin && (
+          <Field label="Auto-type (Ctrl+V)" hint="What Kipas types into the window you came from. Leave empty to use the default from Settings.">
+            <SequenceInput value={draft.autoType} onChange={(autoType) => set({ autoType })} placeholder={defaultSequence} optional />
+          </Field>
+        )}
         <Field label="Notes">
           <textarea className="input textarea" rows={kind === 'note' ? 8 : 3} value={draft.notes} onChange={(e) => set({ notes: e.target.value })} />
         </Field>

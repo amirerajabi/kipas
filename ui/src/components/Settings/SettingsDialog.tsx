@@ -10,7 +10,9 @@ import { useUpdates } from '../../store/updates';
 import { useVault } from '../../store/vault';
 import { DEFAULT_ITERATIONS } from '../../vault/crypto';
 import { Dialog, Field } from '../common/Dialog';
+import { SequenceInput } from '../common/SequenceInput';
 import { BrandMark } from '../common/visuals';
+import { DEFAULT_AUTOTYPE } from '../../vault/autotype';
 
 const SECTIONS: { id: SettingsSection; label: string; Icon: typeof Settings }[] = [
   { id: 'general', label: 'General', Icon: SlidersHorizontal },
@@ -77,6 +79,28 @@ function General() {
               </button>
             ))}
           </div>
+        </Field>
+      </div>
+      <div className="settings-section">
+        <h3>Auto-type</h3>
+        <Field
+          label="Default sequence"
+          hint={
+            <>
+              Ctrl+V on an item types this into the window you were in before Kipas. Each item can have its own (Edit → Auto-type).
+              {s.autoTypeSequence !== DEFAULT_AUTOTYPE && (
+                <>
+                  {' '}
+                  <button type="button" className="link-btn" onClick={() => save({ autoTypeSequence: DEFAULT_AUTOTYPE })}>
+                    Reset
+                  </button>
+                </>
+              )}
+              {getPlatform().os !== 'win32' && ' Works in the Windows app for now.'}
+            </>
+          }
+        >
+          <SequenceInput value={s.autoTypeSequence} onChange={(v) => save({ autoTypeSequence: v })} />
         </Field>
       </div>
       <div className="settings-section">

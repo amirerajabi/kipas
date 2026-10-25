@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { quickResults, visibleEntries } from '../src/store/list';
+import { AutoTypeError, buildSteps, DEFAULT_AUTOTYPE, needsTotp, sequenceFor } from '../src/vault/autotype';
 import { createKey, MIN_ITERATIONS, openVault, openWithKey, parseEnvelope, seal, VaultFormatError, WrongPasswordError, type VaultEnvelope } from '../src/vault/crypto';
 import { exportCsv, importCsv, parseCsv, toCsv } from '../src/vault/csv';
 import { DEFAULT_GENERATOR, generatePassphrase, generatePassword, generatorBits, randomInt } from '../src/vault/generator';
@@ -270,5 +271,46 @@ describe('health and list', () => {
     assert.deepEqual(visibleEntries(v, { filter: { kind: 'favorites' }, query: 'family', sort }).map((e) => e.title), ['Passport'], 'a search looks past the side panel');
     assert.deepEqual(visibleEntries(v, { filter: { kind: 'all' }, query: 'github octo', sort }).map((e) => e.title), ['GitHub']);
     assert.deepEqual(visibleEntries(v, { filter: { kind: 'trash' }, query: '', sort }).map((e) => e.title), ['Old GitHub']);
+  });
+});
+
+describe('auto-type', () => {
+  const values = { title: 'GitHub', username: 'octocat', password: 'p{a}ss+^', url: 'https://github.com', totp: '123456', fields: [{ name: 'PIN', value: '0000' }] };
+
+  it('builds user name, Tab, password by default', () => {
+    assert.deepEqual(buildSteps(DEFAULT_AUTOTYPE, values), [
+      { t: 'text', v: 'octocat' },
+      { t: 'key', v: 'tab' },
+      { t: 'text', v: 'p{a}ss+^' },
+    ]);
+  });
+
+  it('repeats keys, waits, reads custom fields and types literal text', () => {
+    assert.deepEqual(buildSteps('{username}{TAB 2}{S:pin}{DELAY 300}x{{}y{}}{ENTER}', values), [
+      { t: 'text', v: 'octocat' },
+      { t: 'key', v: 'tab' },
+      { t: 'key', v: 'tab' },
+      { t: 'text', v: '0000' },
+      { t: 'delay', v: 300 },
+      { t: 'text', v: 'x{y}' },
+      { t: 'key', v: 'enter' },
+    ]);
+    assert.ok(needsTotp('{USERNAME}{TOTP}'));
+    assert.ok(!needsTotp(DEFAULT_AUTOTYPE));
+  });
+
+  it('explains mistakes instead of typing something else', () => {
+    assert.throws(() => buildSteps('{USERNAME', values), /not closed/);
+    assert.throws(() => buildSteps('{FOO}', values), /not something Kipas can type/);
+    assert.throws(() => buildSteps('{TAB 99}', values), /repeat between/);
+    assert.throws(() => buildSteps('{S:Missing}', values), /no field called/);
+    assert.throws(() => buildSteps('{TOTP}', { ...values, totp: '' }), AutoTypeError);
+    assert.throws(() => buildSteps('{DELAY 100}', values), /types nothing/);
+  });
+
+  it('uses the own sequence of an item, else the default', () => {
+    assert.equal(sequenceFor({ autoType: '' }, '{PASSWORD}'), '{PASSWORD}');
+    assert.equal(sequenceFor({ autoType: ' {USERNAME}{ENTER} ' }, '{PASSWORD}'), '{USERNAME}{ENTER}');
+    assert.equal(sequenceFor({ autoType: '' }, ''), DEFAULT_AUTOTYPE);
   });
 });
