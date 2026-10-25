@@ -2,6 +2,14 @@
 
 ## Released
 
+- **v1.4.0** (2026-10-25): nested groups; auto-type presses Enter by default. Notes: [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
+  - **Auto-type presses Enter by default** (`{USERNAME}{TAB}{PASSWORD}{ENTER}`). Settings that still hold 1.3.0's default
+    move to the new one.
+  - **Nested groups:** groups inside groups to any depth (New subgroup…, drag a group onto another, drop on the Groups
+    heading for the top level). A group shows its subgroups' items too; deleting one moves its contents up a level.
+    KeePass and CSV imports (`Root/Internet/Mail`, Bitwarden folders) keep the tree; CSV export writes paths. Vaults
+    from before open with top-level groups. Groups imported flat by 1.1-1.3 (named "Internet / Social") are not split.
+  - No mention of the projects Kipas grew from, in files (two old commit messages still name it).
 - **v1.3.0** (2026-10-25): auto-type. Notes: [release-notes/v1.3.0.md](release-notes/v1.3.0.md).
   - **Auto-type (Ctrl+V, Windows):** KeePass-style sequences, a default in Settings and one per item; KeePass imports keep
     their sequences. The typing helper passes `npm run test:autotype` (real SendInput into a test window, Unicode and
@@ -19,13 +27,7 @@
 
 ## On `main`, not released yet
 
-- **Auto-type presses Enter by default** (`{USERNAME}{TAB}{PASSWORD}{ENTER}`). Settings that still hold 1.3.0's default
-  move to the new one.
-- **Nested groups:** groups inside groups to any depth (New subgroup…, drag a group onto another, drop on the Groups
-  heading for the top level). A group shows its subgroups' items too; deleting one moves its contents up a level.
-  KeePass and CSV imports (`Root/Internet/Mail`, Bitwarden folders) keep the tree; CSV export writes paths. Vaults
-  from before open with top-level groups. Groups imported flat by 1.1-1.3 (named "Internet / Social") are not split.
-- No mention of the projects Kipas grew from, in files (two old commit messages still name it).
+Nothing.
 
 ## Checked
 
