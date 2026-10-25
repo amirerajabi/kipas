@@ -19,7 +19,8 @@
 
 ## On `main`, not released yet
 
-Nothing.
+- **Auto-type presses Enter by default** (`{USERNAME}{TAB}{PASSWORD}{ENTER}`). Settings that still hold 1.3.0's default
+  move to the new one.
 
 ## Checked
 

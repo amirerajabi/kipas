@@ -277,11 +277,12 @@ describe('health and list', () => {
 describe('auto-type', () => {
   const values = { title: 'GitHub', username: 'octocat', password: 'p{a}ss+^', url: 'https://github.com', totp: '123456', fields: [{ name: 'PIN', value: '0000' }] };
 
-  it('builds user name, Tab, password by default', () => {
+  it('builds user name, Tab, password, Enter by default', () => {
     assert.deepEqual(buildSteps(DEFAULT_AUTOTYPE, values), [
       { t: 'text', v: 'octocat' },
       { t: 'key', v: 'tab' },
       { t: 'text', v: 'p{a}ss+^' },
+      { t: 'key', v: 'enter' },
     ]);
   });
 

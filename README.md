@@ -20,7 +20,7 @@ device**. No account, no cloud, no tracking. Electron + React, with the same she
   their password and key file: groups, custom fields, two-factor secrets, password history and the recycle bin come along.
 - **Import** CSV from KeePass, KeePassXC, Bitwarden, 1Password, LastPass, Chrome, Edge, Firefox. **Export** to CSV.
 - **Auto-type (Windows)**: Ctrl+V on an item types it into the window you came from, by default user name, Tab,
-  password. Change the sequence for all items (Settings) or one item (Edit), e.g. `{USERNAME}{TAB 2}{PASSWORD}{ENTER}`.
+  password, Enter. Change the sequence for all items (Settings) or one item (Edit), e.g. `{USERNAME}{TAB 2}{PASSWORD}`.
   Ctrl+B copies the user name, Ctrl+C the password.
 - **Quick access**: Ctrl+Shift+Space opens a small search over any app; Enter copies the password, Ctrl+B the user
   name, Ctrl+T the one-time code. It never holds the vault: the main window does the copying.

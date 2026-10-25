@@ -189,7 +189,7 @@ const AUTOTYPE_FAILED: Record<string, string> = {
 
 /**
  * KeePass's Ctrl+V: type the entry into the window you were in before Kipas, following its auto-type sequence (its own,
- * or the default from Settings), e.g. user name, Tab, password.
+ * or the default from Settings), e.g. user name, Tab, password, Enter.
  */
 export async function autoTypeEntry(e: Entry): Promise<boolean> {
   try {

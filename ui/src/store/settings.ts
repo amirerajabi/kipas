@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DEFAULT_AUTOTYPE } from '../vault/autotype';
+import { DEFAULT_AUTOTYPE, OLD_DEFAULT_AUTOTYPE } from '../vault/autotype';
 import { DEFAULT_GENERATOR, type GeneratorOptions } from '../vault/generator';
 
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -42,6 +42,8 @@ const KEY = 'kipas.settings';
 function load(): Settings {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>;
+    // Saving any setting stores the whole object, so 1.3.0's default sits in storage as if chosen; follow the new one.
+    if (s.autoTypeSequence === OLD_DEFAULT_AUTOTYPE) s.autoTypeSequence = DEFAULT_AUTOTYPE;
     return { ...DEFAULT_SETTINGS, ...s, generator: { ...DEFAULT_GENERATOR, ...s.generator } };
   } catch {
     return DEFAULT_SETTINGS;

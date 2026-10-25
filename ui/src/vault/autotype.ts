@@ -4,7 +4,9 @@
 import type { AutoTypeKey, AutoTypeStep } from '../../../shared/protocol';
 import type { Entry } from './model';
 
-export const DEFAULT_AUTOTYPE = '{USERNAME}{TAB}{PASSWORD}';
+export const DEFAULT_AUTOTYPE = '{USERNAME}{TAB}{PASSWORD}{ENTER}';
+/** The default in 1.3.0, before Enter was added; settings still holding it move to the new default. */
+export const OLD_DEFAULT_AUTOTYPE = '{USERNAME}{TAB}{PASSWORD}';
 /** Repeats ({TAB 3}) and delays ({DELAY 500}) are capped so a typo cannot type for minutes. */
 const MAX_REPEAT = 20;
 const MAX_DELAY_MS = 10_000;
