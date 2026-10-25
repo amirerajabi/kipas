@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { analyzeHealth, type HealthIssue, type HealthReport } from '../vault/health';
 import type { QuickResult } from '../../../shared/protocol';
-import { hostOf, openableUrl, type Entry, type EntryKind, type VaultData } from '../vault/model';
+import { groupAndDescendants, groupPath, hostOf, openableUrl, type Entry, type EntryKind, type VaultData } from '../vault/model';
 import { parseTotp } from '../vault/totp';
 
 export type Filter =
@@ -56,7 +56,8 @@ export function healthOf(entries: Entry[]): HealthReport {
   return r;
 }
 
-function inFilter(e: Entry, f: Filter, health: () => HealthReport): boolean {
+/** A group shows its own items and those of its subgroups. */
+function inFilter(e: Entry, f: Filter, health: () => HealthReport, groupIds: () => Set<string>): boolean {
   if (f.kind === 'trash') return e.trashed !== null;
   if (e.trashed !== null) return false;
   switch (f.kind) {
@@ -67,13 +68,13 @@ function inFilter(e: Entry, f: Filter, health: () => HealthReport): boolean {
     case 'type':
       return e.kind === f.id;
     case 'group':
-      return e.groupId === f.id;
+      return e.groupId !== null && groupIds().has(e.groupId);
     case 'health':
       return health()[f.id].has(e.id);
   }
 }
 
-/** Every word of the query must appear in the title, user name, address, tags, notes or group. */
+/** Every word of the query must appear in the title, user name, address, tags, notes or group path. */
 export function matchesQuery(e: Entry, words: string[], groupName: string): boolean {
   if (words.length === 0) return true;
   const hay = `${e.title}\n${e.username}\n${hostOf(e.url)}\n${e.url}\n${e.tags.join(' ')}\n${e.notes}\n${groupName}`.toLowerCase();
@@ -83,10 +84,12 @@ export function matchesQuery(e: Entry, words: string[], groupName: string): bool
 export function visibleEntries(data: VaultData | null, s: Pick<ListState, 'filter' | 'query' | 'sort'>): Entry[] {
   if (!data) return [];
   const words = s.query.toLowerCase().split(/\s+/).filter(Boolean);
-  const groups = new Map(data.groups.map((g) => [g.id, g.name]));
+  const groups = new Map(data.groups.map((g) => [g.id, groupPath(data.groups, g.id)]));
   // A search looks through everything that is not in the trash, whatever the side panel shows, like a search box should.
   const filter: Filter = words.length && s.filter.kind !== 'trash' ? { kind: 'all' } : s.filter;
-  const list = data.entries.filter((e) => inFilter(e, filter, () => healthOf(data.entries)) && matchesQuery(e, words, e.groupId ? (groups.get(e.groupId) ?? '') : ''));
+  let inGroup: Set<string> | null = null;
+  const groupIds = () => (inGroup ??= filter.kind === 'group' ? groupAndDescendants(data.groups, filter.id) : new Set());
+  const list = data.entries.filter((e) => inFilter(e, filter, () => healthOf(data.entries), groupIds) && matchesQuery(e, words, e.groupId ? (groups.get(e.groupId) ?? '') : ''));
   const { key, dir } = s.sort;
   const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
   return list.sort((a, b) => {
@@ -104,7 +107,7 @@ export function visibleEntries(data: VaultData | null, s: Pick<ListState, 'filte
 export function quickResults(data: VaultData, query: string, limit = 8): QuickResult[] {
   const q = query.trim().toLowerCase();
   const words = q.split(/\s+/).filter(Boolean);
-  const groups = new Map(data.groups.map((g) => [g.id, g.name]));
+  const groups = new Map(data.groups.map((g) => [g.id, groupPath(data.groups, g.id)]));
   const rank = (e: Entry) => (q && e.title.toLowerCase().startsWith(q) ? 4 : 0) + (q && hostOf(e.url).startsWith(q) ? 2 : 0) + (e.favorite ? 1 : 0);
   return data.entries
     .filter((e) => !e.trashed && matchesQuery(e, words, e.groupId ? (groups.get(e.groupId) ?? '') : ''))

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { baseName, getPlatform } from '../platform';
 import { createKey, DEFAULT_ITERATIONS, deriveKey, openVault, openWithKey, seal, WrongPasswordError, type VaultKey } from '../vault/crypto';
-import { editEntry, emptyVault, newId, type Entry, type Group, type VaultData } from '../vault/model';
+import { canMoveGroup, editEntry, emptyVault, newId, type Entry, type Group, type VaultData } from '../vault/model';
 
 export type SaveState = 'saved' | 'saving' | 'error';
 
@@ -36,8 +36,11 @@ interface VaultState {
   trash(ids: string[]): void;
   restore(ids: string[]): void;
   purge(ids: string[]): void;
-  addGroup(name: string): string;
+  addGroup(name: string, parentId?: string | null): string;
   renameGroup(id: string, name: string): void;
+  /** Put a group inside another (or at the top level with null); refused when it would end up inside itself. */
+  moveGroup(id: string, parentId: string | null): boolean;
+  /** Its subgroups and items move up into its parent. */
   deleteGroup(id: string): void;
   importEntries(entries: Entry[], groups: Group[]): void;
 }
@@ -177,14 +180,27 @@ export const useVault = create<VaultState>((set, get) => {
       const set_ = new Set(ids);
       get().apply((d) => ({ ...d, entries: d.entries.filter((e) => !set_.has(e.id)) }));
     },
-    addGroup(name) {
+    addGroup(name, parentId = null) {
       const id = newId();
-      get().apply((d) => ({ ...d, groups: [...d.groups, { id, name }] }));
+      get().apply((d) => ({ ...d, groups: [...d.groups, { id, name, parentId }] }));
       return id;
     },
     renameGroup: (id, name) => get().apply((d) => ({ ...d, groups: d.groups.map((g) => (g.id === id ? { ...g, name } : g)) })),
+    moveGroup(id, parentId) {
+      const d = get().data;
+      if (!d || id === parentId || !canMoveGroup(d.groups, id, parentId)) return false;
+      get().apply((v) => ({ ...v, groups: v.groups.map((g) => (g.id === id ? { ...g, parentId } : g)) }));
+      return true;
+    },
     deleteGroup: (id) =>
-      get().apply((d) => ({ ...d, groups: d.groups.filter((g) => g.id !== id), entries: d.entries.map((e) => (e.groupId === id ? { ...e, groupId: null } : e)) })),
+      get().apply((d) => {
+        const parent = d.groups.find((g) => g.id === id)?.parentId ?? null;
+        return {
+          ...d,
+          groups: d.groups.filter((g) => g.id !== id).map((g) => (g.parentId === id ? { ...g, parentId: parent } : g)),
+          entries: d.entries.map((e) => (e.groupId === id ? { ...e, groupId: parent } : e)),
+        };
+      }),
     importEntries: (entries, groups) => get().apply((d) => ({ ...d, groups: [...d.groups, ...groups], entries: [...d.entries, ...entries] })),
   };
 });

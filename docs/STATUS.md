@@ -7,7 +7,7 @@
     their sequences. The typing helper passes `npm run test:autotype` (real SendInput into a test window, Unicode and
     special characters exact). The full Ctrl+V flow from the Kipas window into another app was not pressed by hand.
 - **v1.2.0** (2026-10-24): new three-column layout and quick access. Notes: [release-notes/v1.2.0.md](release-notes/v1.2.0.md).
-  - **New layout:** three columns (vault tree | items | details) in place of Grabbit's toolbar, table and status bar. The
+  - **New layout:** three columns (vault tree | items | details) in place of the toolbar, table and status bar. The
     side panel's footer carries Health, saving, clipboard, update and auto-lock; Health is a page of its own (Ctrl+H).
   - **Quick access window** (Ctrl+Shift+Space, Settings → General). Checked in Electron through the real relay (search
     and the shown rows); copying from it and the global shortcut itself were not pressed by hand.
@@ -21,6 +21,11 @@
 
 - **Auto-type presses Enter by default** (`{USERNAME}{TAB}{PASSWORD}{ENTER}`). Settings that still hold 1.3.0's default
   move to the new one.
+- **Nested groups:** groups inside groups to any depth (New subgroup…, drag a group onto another, drop on the Groups
+  heading for the top level). A group shows its subgroups' items too; deleting one moves its contents up a level.
+  KeePass and CSV imports (`Root/Internet/Mail`, Bitwarden folders) keep the tree; CSV export writes paths. Vaults
+  from before open with top-level groups. Groups imported flat by 1.1-1.3 (named "Internet / Social") are not split.
+- No mention of the projects Kipas grew from, in files (two old commit messages still name it).
 
 ## Checked
 
@@ -41,6 +46,6 @@ one release to the next.
 - Argon2 runs on the UI thread (about 4 s for KeePass's default 64 MiB; KeePassXC files tuned to 1 s natively can take
   much longer). A Web Worker or WASM would keep the window responsive.
 - Detect a vault changed on disk by another device (sync conflicts) before saving over it.
-- Browser extension for autofill (Grabbit's extension setup is a template).
+- Browser extension for autofill.
 - Exclude copied secrets from Windows clipboard history.
 - Code signing (Windows and macOS).

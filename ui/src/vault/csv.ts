@@ -1,6 +1,6 @@
 // CSV import and export. Import recognises the column names that KeePass, KeePassXC, Bitwarden, 1Password, LastPass and
 // the Chromium/Firefox password exports use; export writes KeePassXC's layout so the file opens elsewhere too.
-import { blankEntry, newId, type Entry, type Group, type VaultData } from './model';
+import { blankEntry, groupPath, groupResolver, type Entry, type Group, type VaultData } from './model';
 
 /** RFC 4180: quoted fields, doubled quotes, CRLF or LF, newlines inside quotes. */
 export function parseCsv(text: string): string[][] {
@@ -65,7 +65,7 @@ export interface CsvImport {
   skipped: number;
 }
 
-/** Build entries from a CSV export. Group names are matched to existing groups (case-insensitive) or created. */
+/** Build entries from a CSV export. Group paths are matched to existing groups (case-insensitive) or created, nested. */
 export function importCsv(text: string, vault: Pick<VaultData, 'groups'>, now = Date.now()): CsvImport {
   const rows = parseCsv(text);
   if (rows.length < 2) throw new Error('The file has no rows to import.');
@@ -74,19 +74,13 @@ export function importCsv(text: string, vault: Pick<VaultData, 'groups'>, now = 
   for (const key of Object.keys(ALIASES) as Column[]) col[key] = header.findIndex((h) => ALIASES[key].includes(h));
   if (col.password < 0 && col.username < 0) throw new Error('No "password" or "username" column found. Export as CSV with a header row.');
 
-  const byName = new Map(vault.groups.map((g) => [g.name.toLowerCase(), g]));
-  const created: Group[] = [];
+  const groups = groupResolver(vault.groups);
   const groupFor = (name: string): string | null => {
-    // KeePass exports nest groups as "Root/Internet/Mail"; keep the last part, minus the database root.
-    const clean = name.split(/[\\/]/).map((p) => p.trim()).filter(Boolean).pop() ?? '';
-    if (!clean || /^(root|database)$/i.test(clean)) return null;
-    let g = byName.get(clean.toLowerCase());
-    if (!g) {
-      g = { id: newId(), name: clean };
-      byName.set(clean.toLowerCase(), g);
-      created.push(g);
-    }
-    return g.id;
+    // Nested groups and folders come as paths: "Root/Internet/Mail" (KeePassXC), "Work/Clients" (Bitwarden). The
+    // database root is not a group of its own.
+    const parts = name.split(/[\\/]/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length && /^(root|database)$/i.test(parts[0])) parts.shift();
+    return groups.resolve(parts);
   };
 
   const entries: Entry[] = [];
@@ -112,12 +106,12 @@ export function importCsv(text: string, vault: Pick<VaultData, 'groups'>, now = 
     e.favorite = /^(1|true|yes|x)$/i.test(get('favorite'));
     entries.push(e);
   }
-  return { entries, groups: created, skipped };
+  return { entries, groups: groups.created, skipped };
 }
 
-/** Live entries (not the trash) in KeePassXC's CSV layout. */
+/** Live entries (not the trash) in KeePassXC's CSV layout; nested groups as "Internet/Social". */
 export function exportCsv(vault: VaultData): string {
-  const groupName = new Map(vault.groups.map((g) => [g.id, g.name]));
+  const groupName = new Map(vault.groups.map((g) => [g.id, groupPath(vault.groups, g.id, '/')]));
   const rows = [['Group', 'Title', 'Username', 'Password', 'URL', 'Notes', 'TOTP', 'Tags']];
   for (const e of vault.entries) {
     if (e.trashed) continue;

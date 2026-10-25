@@ -100,10 +100,12 @@ export async function emptyTrash(): Promise<void> {
   if (r.ok) useVault.getState().purge(ids);
 }
 
-export async function newGroup(): Promise<string | null> {
-  const name = (await useUi.getState().askText({ title: 'New group', label: 'Name', value: '', confirmLabel: 'Create' }))?.trim();
+/** A new group, at the top level or inside `parentId`; the list then shows it. */
+export async function newGroup(parentId: string | null = null): Promise<string | null> {
+  const parent = parentId ? useVault.getState().data?.groups.find((g) => g.id === parentId) : undefined;
+  const name = (await useUi.getState().askText({ title: parent ? `New group in ${parent.name}` : 'New group', label: 'Name', value: '', confirmLabel: 'Create' }))?.trim();
   if (!name) return null;
-  const id = useVault.getState().addGroup(name);
+  const id = useVault.getState().addGroup(name, parent?.id ?? null);
   useList.getState().setFilter({ kind: 'group', id });
   return id;
 }

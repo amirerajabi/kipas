@@ -8,7 +8,7 @@ import { healthOf, useList, visibleEntries, type Filter, type SortKey } from '..
 import { useUi } from '../../store/ui';
 import { useVault } from '../../store/vault';
 import { HEALTH_LABEL } from '../../vault/health';
-import { hostOf, KIND_LABEL, KINDS, type Entry, type VaultData } from '../../vault/model';
+import { groupPath, hostOf, KIND_LABEL, KINDS, type Entry, type VaultData } from '../../vault/model';
 import { showMenuBelow } from '../common/Menu';
 import { Avatar, KindIcon } from '../common/visuals';
 import { ENTRY_DRAG } from '../Sidebar/VaultPanel';
@@ -34,7 +34,7 @@ function filterTitle(f: Filter, data: VaultData): string {
     case 'type':
       return PLURAL[f.id] ?? KIND_LABEL[f.id];
     case 'group':
-      return data.groups.find((g) => g.id === f.id)?.name ?? 'Group';
+      return groupPath(data.groups, f.id) || 'Group';
     case 'health':
       return HEALTH_LABEL[f.id];
   }

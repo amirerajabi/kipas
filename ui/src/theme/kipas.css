@@ -1223,3 +1223,13 @@ label.notice input {
   padding: 0 8px;
   font-size: var(--text-xs);
 }
+
+/* ---------- nested groups ---------- */
+.sidebar .tree-twisty-slot {
+  width: 16px;
+}
+.tree-heading.dropping {
+  border-radius: var(--radius);
+  background: var(--accent-soft-strong);
+  outline: 1px dashed var(--accent);
+}

@@ -4,7 +4,7 @@ import { useList } from '../../store/list';
 import { useSettings } from '../../store/settings';
 import { useUi, type EditorState } from '../../store/ui';
 import { useVault } from '../../store/vault';
-import { blankEntry, hostOf, KIND_LABEL, KINDS, newId, type Entry } from '../../vault/model';
+import { blankEntry, groupTree, hostOf, KIND_LABEL, KINDS, newId, type Entry } from '../../vault/model';
 import { parseTotp } from '../../vault/totp';
 import { Dialog, Field } from '../common/Dialog';
 import { SecretInput } from '../common/SecretInput';
@@ -122,8 +122,9 @@ function Editor({ editor }: { editor: EditorState }) {
           <Field label="Group">
             <select className="input select" value={draft.groupId ?? ''} onChange={(e) => set({ groupId: e.target.value || null })}>
               <option value="">No group</option>
-              {groups.map((g) => (
+              {groupTree(groups).map(({ group: g, depth }) => (
                 <option key={g.id} value={g.id}>
+                  {'\u2003'.repeat(depth)}
                   {g.name}
                 </option>
               ))}

@@ -7,7 +7,7 @@ import { healthOf, useList } from '../../store/list';
 import { useUi } from '../../store/ui';
 import { useVault } from '../../store/vault';
 import type { HealthIssue } from '../../vault/health';
-import { hostOf, KIND_LABEL, openableUrl, type Entry } from '../../vault/model';
+import { groupPath, hostOf, KIND_LABEL, openableUrl, type Entry } from '../../vault/model';
 import { groupCode, parseTotp, totpNow, type TotpSpec } from '../../vault/totp';
 import { Avatar, CountdownRing, StrengthMeter } from '../common/visuals';
 import { entryMenu } from '../EntryList/contextMenu';
@@ -51,7 +51,7 @@ export function DetailsPane() {
       </aside>
     );
   }
-  return <EntryDetails entry={entry} groupName={data.groups.find((g) => g.id === entry.groupId)?.name} issues={issuesOf(entry, data.entries)} />;
+  return <EntryDetails entry={entry} groupName={groupPath(data.groups, entry.groupId) || undefined} issues={issuesOf(entry, data.entries)} />;
 }
 
 const ISSUE_TEXT: Record<HealthIssue, string> = { weak: 'Weak password', reused: 'Reused password', old: 'Password older than a year', no2fa: 'No two-factor' };

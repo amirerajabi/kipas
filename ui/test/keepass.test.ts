@@ -109,12 +109,16 @@ describe('keepass import', () => {
   for (const c of cases) {
     it(`imports ${c.file}`, async () => {
       const vault = emptyVault('V');
-      vault.groups.push({ id: 'existing-banking', name: 'banking' });
+      vault.groups.push({ id: 'existing-banking', name: 'banking', parentId: null });
       const r = await importKeePass(fixture(c.file), { password: PASSWORD, keyFile: c.keyFile ? fixture('test.keyx') : undefined }, vault);
       assert.equal(r.version, c.version);
       assert.equal(r.name, 'Test Vault');
       assert.equal(r.attachmentsSkipped, 1);
-      assert.deepEqual(r.groups.map((g) => g.name).sort(), ['Internet', 'Internet / Social'], 'existing groups are reused, case-insensitively');
+      const internet = r.groups.find((g) => g.name === 'Internet');
+      const social = r.groups.find((g) => g.name === 'Social');
+      assert.equal(r.groups.length, 2, 'existing groups are reused, case-insensitively; the recycle bin is no group');
+      assert.equal(internet?.parentId, null);
+      assert.equal(social?.parentId, internet?.id, 'Social stays inside Internet');
       const by = Object.fromEntries(r.entries.map((e) => [e.title, e]));
       assert.deepEqual(Object.keys(by).sort(), ['Bank', 'Deleted thing', 'GitHub', 'Mastodon', 'Root note']);
 
@@ -137,7 +141,7 @@ describe('keepass import', () => {
       assert.ok(gh.created > Date.UTC(2020, 0, 1) && gh.created <= Date.now() + 1000, 'times are converted');
 
       assert.equal(by.Mastodon.password, 'Ünïcødé-πass');
-      assert.equal(r.groups.find((g) => g.id === by.Mastodon.groupId)?.name, 'Internet / Social');
+      assert.equal(by.Mastodon.groupId, social?.id);
       assert.equal(by.Bank.groupId, 'existing-banking');
       assert.deepEqual(by.Bank.fields.map((f) => [f.name, f.secret]), [['PIN code', true]]);
       assert.equal(by['Root note'].kind, 'note');

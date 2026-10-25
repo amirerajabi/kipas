@@ -8,7 +8,7 @@ import { createKey, MIN_ITERATIONS, openVault, openWithKey, parseEnvelope, seal,
 import { exportCsv, importCsv, parseCsv, toCsv } from '../src/vault/csv';
 import { DEFAULT_GENERATOR, generatePassphrase, generatePassword, generatorBits, randomInt } from '../src/vault/generator';
 import { analyzeHealth, OLD_AFTER_MS } from '../src/vault/health';
-import { blankEntry, editEntry, emptyVault, HISTORY_LIMIT, hostOf, normalizeVault, openableUrl, type VaultData } from '../src/vault/model';
+import { blankEntry, canMoveGroup, editEntry, emptyVault, groupPath, groupResolver, groupTree, HISTORY_LIMIT, hostOf, normalizeVault, openableUrl, type Group, type VaultData } from '../src/vault/model';
 import { estimateStrength } from '../src/vault/strength';
 import { base32Decode, hotp, parseTotp, totpNow } from '../src/vault/totp';
 
@@ -202,8 +202,15 @@ describe('csv', () => {
     assert.equal(chrome.entries[0].title, 'example.com', 'title falls back to the host');
 
     const kp = importCsv('"Group","Title","Username","Password","URL","Notes"\n"Root/Internet/Mail","Gmail","a@b.c","pw3","https://mail.google.com",""\n"Root","Bank","x","pw4","",""\n', vault);
-    assert.equal(kp.groups.length, 1);
-    assert.equal(kp.groups[0].name, 'Mail');
+    assert.deepEqual(
+      kp.groups.map((g) => [g.name, g.parentId && kp.groups.find((p) => p.id === g.parentId)?.name]),
+      [
+        ['Internet', null],
+        ['Mail', 'Internet'],
+      ],
+      'paths become nested groups, without the database root',
+    );
+    assert.equal(kp.entries[0].groupId, kp.groups[1].id);
     assert.equal(kp.entries[1].groupId, null, 'the database root is no group');
     assert.throws(() => importCsv('foo,bar\n1,2\n', vault), /column/);
   });
@@ -313,5 +320,50 @@ describe('auto-type', () => {
     assert.equal(sequenceFor({ autoType: '' }, '{PASSWORD}'), '{PASSWORD}');
     assert.equal(sequenceFor({ autoType: ' {USERNAME}{ENTER} ' }, '{PASSWORD}'), '{USERNAME}{ENTER}');
     assert.equal(sequenceFor({ autoType: '' }, ''), DEFAULT_AUTOTYPE);
+  });
+});
+
+describe('groups', () => {
+  const g = (id: string, name: string, parentId: string | null = null): Group => ({ id, name, parentId });
+  const groups = [g('w', 'Work'), g('c', 'Clients', 'w'), g('a', 'Acme', 'c'), g('p', 'Personal'), g('b', 'Banks', 'p')];
+
+  it('lists the tree in order with depths and paths', () => {
+    assert.deepEqual(
+      groupTree(groups).map((r) => `${r.depth}:${r.group.name}`),
+      ['0:Personal', '1:Banks', '0:Work', '1:Clients', '2:Acme'],
+    );
+    assert.equal(groupPath(groups, 'a'), 'Work / Clients / Acme');
+    assert.equal(groupPath(groups, null), '');
+  });
+
+  it('never lets a group move inside itself', () => {
+    assert.ok(canMoveGroup(groups, 'a', 'p'));
+    assert.ok(canMoveGroup(groups, 'c', null));
+    assert.ok(!canMoveGroup(groups, 'w', 'a'), 'Work into its own grandchild');
+    assert.ok(!canMoveGroup(groups, 'w', 'w'));
+  });
+
+  it('repairs loops and missing parents when a vault is read', () => {
+    const v = normalizeVault({ groups: [{ id: 'x', name: 'X', parentId: 'y' }, { id: 'y', name: 'Y', parentId: 'x' }, { id: 'z', name: 'Z', parentId: 'gone' }, { id: 'old', name: 'Old' }], entries: [] });
+    const byId = Object.fromEntries(v.groups.map((x) => [x.id, x.parentId]));
+    assert.equal(byId.z, null);
+    assert.equal(byId.old, null, 'vaults from before nesting open with top-level groups');
+    assert.ok(byId.x === null || byId.y === null, 'the loop is broken');
+    assert.equal(groupTree(v.groups).length, 4, 'every group is still reachable');
+  });
+
+  it('shows a group with its subgroups and resolves import paths onto existing groups', () => {
+    const v = emptyVault('V');
+    v.groups = [...groups];
+    const mk = (title: string, groupId: string) => ({ ...blankEntry('login', groupId), title });
+    v.entries = [mk('in work', 'w'), mk('in acme', 'a'), mk('in banks', 'b')];
+    const sort = { key: 'title' as const, dir: 1 as const };
+    assert.deepEqual(visibleEntries(v, { filter: { kind: 'group', id: 'w' }, query: '', sort }).map((e) => e.title), ['in acme', 'in work']);
+    assert.deepEqual(visibleEntries(v, { filter: { kind: 'all' }, query: 'clients', sort }).map((e) => e.title), ['in acme'], 'search reads the group path');
+    const r = groupResolver(groups);
+    assert.equal(r.resolve(['work', 'CLIENTS', 'Acme']), 'a');
+    const fresh = r.resolve(['Work', 'Clients', 'Globex']);
+    assert.deepEqual(r.created, [{ id: fresh, name: 'Globex', parentId: 'c' }]);
+    assert.equal(r.resolve([]), null);
   });
 });

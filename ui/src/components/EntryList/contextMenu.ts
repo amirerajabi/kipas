@@ -2,7 +2,7 @@ import { ArchiveRestore, Copy, Folder, FolderInput, FolderMinus, KeyRound, Penci
 import { autoTypeEntry, copyText, copyTotp, deleteEntries, duplicate, editEntry, openUrl, selectedEntries } from '../../app/actions';
 import { useList } from '../../store/list';
 import { useVault } from '../../store/vault';
-import { openableUrl, type Entry } from '../../vault/model';
+import { groupTree, openableUrl, type Entry } from '../../vault/model';
 import { parseTotp } from '../../vault/totp';
 import { useMenu, type MenuItem } from '../common/Menu';
 
@@ -25,7 +25,7 @@ export function entryMenu(x: number, y: number, entry: Entry): void {
   const moveTo = (groupId: string | null) => {
     for (const e of sel) useVault.getState().updateEntry(e.id, { groupId });
   };
-  const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
+  const groups = groupTree(data.groups);
   const items: MenuItem[] = [
     { label: 'Auto-type', icon: TextCursorInput, shortcut: 'Mod+V', disabled: many || (!entry.username && !entry.password), run: () => autoTypeEntry(entry) },
     { label: 'Copy user name', icon: User, shortcut: 'Mod+B', disabled: many || !entry.username, run: () => copyText(entry.username, 'User name', false) },
@@ -47,7 +47,7 @@ export function entryMenu(x: number, y: number, entry: Entry): void {
       label: 'Move to group',
       icon: FolderInput,
       submenu: [
-        ...groups.map((g): MenuItem => ({ label: g.name, icon: Folder, checked: sel.every((e) => e.groupId === g.id), run: () => moveTo(g.id) })),
+        ...groups.map(({ group: g, depth }): MenuItem => ({ label: `${'\u2003'.repeat(depth)}${g.name}`, icon: Folder, checked: sel.every((e) => e.groupId === g.id), run: () => moveTo(g.id) })),
         ...(groups.length ? (['separator'] as MenuItem[]) : []),
         { label: 'No group', icon: FolderMinus, run: () => moveTo(null) },
       ],

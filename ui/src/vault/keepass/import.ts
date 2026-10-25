@@ -1,9 +1,9 @@
-// KeePass XML -> Kipas entries. Nested groups become flat Kipas groups named by their path ("Internet / Social"),
-// entries in the recycle bin land in Kipas's trash, history becomes password history, and every extra string field is
+// KeePass XML -> Kipas entries. The group tree comes over as it is (Internet > Social stays nested; a group already in
+// the vault at the same place is reused), entries in the recycle bin land in Kipas's trash, history becomes password history, and every extra string field is
 // kept (hidden if KeePass protected it). Two-factor secrets are read from KeePass 2.47+ (TimeOtp-*), KeePassXC (otp)
 // and the older KeeOtp / KeeTrayTOTP fields. Attachments are not imported (Kipas has no attachments yet); they are counted.
 import { parseSequence } from '../autotype';
-import { blankEntry, HISTORY_LIMIT, newId, type CustomField, type Entry, type Group, type VaultData } from '../model';
+import { blankEntry, groupResolver, HISTORY_LIMIT, newId, type CustomField, type Entry, type Group, type VaultData } from '../model';
 import { readKdbx, type KdbxCredentials, type KdbxProgress } from './kdbx';
 import { child, children, textOf, type XmlNode } from './xml';
 
@@ -183,43 +183,31 @@ export function fromKeePassXml(xml: XmlNode, vault: Pick<VaultData, 'groups'>, n
   if (!rootGroup) throw new Error('The database has no groups.');
   const binUuid = textOf(meta, 'RecycleBinEnabled') !== 'False' ? textOf(meta, 'RecycleBinUUID') : '';
 
-  const byName = new Map(vault.groups.map((g) => [g.name.toLowerCase(), g]));
-  const created: Group[] = [];
-  const groupFor = (path: string): string | null => {
-    if (!path) return null;
-    let g = byName.get(path.toLowerCase());
-    if (!g) {
-      g = { id: newId(), name: path };
-      byName.set(path.toLowerCase(), g);
-      created.push(g);
-    }
-    return g.id;
-  };
-
+  const groups = groupResolver(vault.groups);
   const entries: Entry[] = [];
   let attachments = 0;
-  const walk = (g: XmlNode, path: string, trashedAt: number | null, parentSequence: string) => {
-    const groupId = groupFor(path);
+  // `path` is the group's names from the top; the recycle bin and everything in it get no group (their entries go to
+  // the trash), so its folders are not recreated.
+  const walk = (g: XmlNode, path: string[] | null, trashedAt: number | null, parentSequence: string) => {
+    const groupId = path ? groups.resolve(path) : null;
     const sequence = textOf(g, 'DefaultAutoTypeSequence').trim() || parentSequence;
     for (const e of children(g, 'Entry')) {
-      const r = toEntry(e, trashedAt ? null : groupId, trashedAt, now, sequence);
+      const r = toEntry(e, groupId, trashedAt, now, sequence);
       entries.push(r.entry);
       attachments += r.attachments;
     }
     for (const sub of children(g, 'Group')) {
       const isBin = !!binUuid && textOf(sub, 'UUID') === binUuid;
       const name = textOf(sub, 'Name').trim() || 'Group';
-      walk(sub, isBin || trashedAt ? '' : path ? `${path} / ${name}` : name, isBin ? now : trashedAt, sequence);
+      walk(sub, isBin || !path ? null : [...path, name], isBin ? now : trashedAt, sequence);
     }
   };
-  // The root group is the database itself: its entries get no group.
-  walk(rootGroup, '', null, '');
-  // A group that only held trashed entries was never created; groups made for nothing are dropped.
-  const used = new Set(entries.map((e) => e.groupId));
+  // The root group is the database itself: its entries get no group, its subgroups are the top level.
+  walk(rootGroup, [], null, '');
   return {
     name: textOf(meta, 'DatabaseName') || textOf(rootGroup, 'Name') || 'KeePass',
     entries,
-    groups: created.filter((g) => used.has(g.id)),
+    groups: groups.created,
     attachmentsSkipped: attachments,
   };
 }

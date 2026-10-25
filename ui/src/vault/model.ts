@@ -44,6 +44,8 @@ export interface Entry {
 export interface Group {
   id: string;
   name: string;
+  /** The group it sits in; null at the top level. Groups nest to any depth. */
+  parentId: string | null;
 }
 
 export interface VaultData {
@@ -108,8 +110,8 @@ export function emptyVault(name: string, now = Date.now()): VaultData {
     created: now,
     modified: now,
     groups: [
-      { id: newId(), name: 'Personal' },
-      { id: newId(), name: 'Work' },
+      { id: newId(), name: 'Personal', parentId: null },
+      { id: newId(), name: 'Work', parentId: null },
     ],
     entries: [],
   };
@@ -138,7 +140,8 @@ export function normalizeVault(raw: unknown): VaultData {
   const groups = (Array.isArray(r.groups) ? r.groups : [])
     .map((g) => g as Record<string, unknown>)
     .filter((g) => typeof g.id === 'string')
-    .map((g): Group => ({ id: g.id as string, name: str(g.name, 'Group') }));
+    .map((g): Group => ({ id: g.id as string, name: str(g.name, 'Group'), parentId: typeof g.parentId === 'string' ? g.parentId : null }));
+  fixGroupParents(groups);
   const groupIds = new Set(groups.map((g) => g.id));
   const entries = (Array.isArray(r.entries) ? r.entries : [])
     .map((e) => e as Record<string, unknown>)
@@ -198,4 +201,98 @@ export function openableUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Make the group tree sound: a parent that does not exist, or a loop (A inside B inside A), puts the group back at the
+ * top level. Works in place; used when a vault is read, so a damaged file still opens.
+ */
+export function fixGroupParents(groups: Group[]): void {
+  const byId = new Map(groups.map((g) => [g.id, g]));
+  for (const g of groups) {
+    if (g.parentId !== null && !byId.has(g.parentId)) g.parentId = null;
+    const seen = new Set([g.id]);
+    for (let p = g.parentId; p !== null; p = byId.get(p)?.parentId ?? null) {
+      if (seen.has(p)) {
+        g.parentId = null;
+        break;
+      }
+      seen.add(p);
+    }
+  }
+}
+
+/** "Internet / Social" for a group inside "Internet". */
+export function groupPath(groups: Group[], id: string | null, separator = ' / '): string {
+  const byId = new Map(groups.map((g) => [g.id, g]));
+  const names: string[] = [];
+  for (let g = id ? byId.get(id) : undefined; g; g = g.parentId ? byId.get(g.parentId) : undefined) {
+    names.unshift(g.name);
+    if (names.length > 64) break;
+  }
+  return names.join(separator);
+}
+
+/** The group and every group inside it, at any depth. */
+export function groupAndDescendants(groups: Group[], id: string): Set<string> {
+  const out = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const g of groups) {
+      if (g.parentId && out.has(g.parentId) && !out.has(g.id)) {
+        out.add(g.id);
+        grew = true;
+      }
+    }
+  }
+  return out;
+}
+
+/** Groups in tree order (each followed by its subgroups, names A-Z at every level), with their depth. */
+export function groupTree(groups: Group[]): { group: Group; depth: number }[] {
+  const kids = new Map<string | null, Group[]>();
+  for (const g of groups) kids.set(g.parentId, [...(kids.get(g.parentId) ?? []), g]);
+  const out: { group: Group; depth: number }[] = [];
+  const walk = (parent: string | null, depth: number) => {
+    for (const g of (kids.get(parent) ?? []).sort((a, b) => a.name.localeCompare(b.name))) {
+      out.push({ group: g, depth });
+      walk(g.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
+
+/** Can `id` move into `parentId` without ending up inside itself? */
+export function canMoveGroup(groups: Group[], id: string, parentId: string | null): boolean {
+  return parentId === null || !groupAndDescendants(groups, id).has(parentId);
+}
+
+/**
+ * Turns group paths (["Internet", "Social"]) into nested groups for an import: a level that already exists under the
+ * same parent (same name, any case) is reused, the rest are created and listed in `created`.
+ */
+export function groupResolver(existing: Group[]): { resolve(path: string[]): string | null; created: Group[] } {
+  const created: Group[] = [];
+  const key = (parentId: string | null, name: string) => `${parentId ?? ''}\u0000${name.trim().toLowerCase()}`;
+  const known = new Map(existing.map((g) => [key(g.parentId, g.name), g.id]));
+  return {
+    created,
+    resolve(path) {
+      let parentId: string | null = null;
+      for (const raw of path) {
+        const name = raw.trim();
+        if (!name) continue;
+        let id = known.get(key(parentId, name));
+        if (!id) {
+          id = newId();
+          created.push({ id, name, parentId });
+          known.set(key(parentId, name), id);
+        }
+        parentId = id;
+      }
+      return parentId;
+    },
+  };
 }
