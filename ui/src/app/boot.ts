@@ -1,14 +1,47 @@
 // Start-up wiring that is not a component: auto-lock on idle and on OS events, clean-up when the vault locks, and a
 // last save before the window closes, and answering the quick-access window.
 import { getPlatform } from '../platform';
-import { quickResults, useList } from '../store/list';
+import { quickResults, useList, type Filter, type ListSort } from '../store/list';
 import { useSettings } from '../store/settings';
-import { useUi } from '../store/ui';
+import { useUi, type MainView } from '../store/ui';
 import { useUpdates } from '../store/updates';
 import { useVault } from '../store/vault';
+import type { VaultData } from '../vault/model';
 import { autoTypeEntry, copyText, copyTotp, lockVault, openUrl } from './actions';
 
 let lastActivity = Date.now();
+
+/**
+ * Where you were when the vault locked. Memory only (gone when Kipas closes), and only ids, the search text and the
+ * view: no secret.
+ */
+interface Place {
+  path: string;
+  view: MainView;
+  filter: Filter;
+  query: string;
+  sort: ListSort;
+  selected: string[];
+  anchor: string | null;
+}
+let lastPlace: Place | null = null;
+
+/** Put the list back as it was; a group or item deleted meanwhile (another device, a restored backup) is skipped. */
+function restorePlace(p: Place, data: VaultData): void {
+  const ids = new Set(data.entries.map((e) => e.id));
+  const groupGone = p.filter.kind === 'group' && !data.groups.some((g) => g.id === (p.filter as { id: string }).id);
+  const selected = p.selected.filter((id) => ids.has(id));
+  useList.setState({
+    filter: groupGone ? { kind: 'all' } : p.filter,
+    query: p.query,
+    sort: p.sort,
+    selected,
+    anchor: p.anchor && ids.has(p.anchor) ? p.anchor : (selected[0] ?? null),
+  });
+  useUi.getState().set({ view: p.view });
+  // Keyboard ready where you left off: arrows, Ctrl+C and Ctrl+V work at once.
+  setTimeout(() => (document.querySelector('.entry-list') as HTMLElement | null)?.focus(), 0);
+}
 
 /** Milliseconds until the idle lock, or null when it is off or nothing is unlocked. */
 export function autoLockIn(now = Date.now()): number | null {
@@ -64,14 +97,19 @@ export function boot(): () => void {
     if ((e === 'minimize' && s.lockOnMinimize) || ((e === 'lock-screen' || e === 'suspend') && s.lockOnSystemLock)) void lockVault(true);
   });
 
-  // Locking forgets everything that came from the vault: dialogs, the selection, the search, revealed secrets.
+  // Locking forgets everything that came from the vault: dialogs, the selection, the search, revealed secrets. Where you
+  // were is noted first, and unlocking the same vault puts you back there.
   const offVault = useVault.subscribe((s, prev) => {
     if (prev.data && !s.data) {
+      const l = useList.getState();
+      lastPlace = prev.path ? { path: prev.path, view: useUi.getState().view, filter: l.filter, query: l.query, sort: l.sort, selected: l.selected, anchor: l.anchor } : null;
       useUi.getState().closeAll();
       useUi.getState().set({ clipboard: null });
       useList.getState().reset();
     } else if (!prev.data && s.data) {
       lastActivity = Date.now();
+      if (lastPlace && lastPlace.path === s.path) restorePlace(lastPlace, s.data);
+      lastPlace = null;
     }
   });
 

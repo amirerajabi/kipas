@@ -2,6 +2,9 @@
 
 ## Released
 
+- **v1.4.1** (2026-10-26): unlock returns to where you were. Notes: [release-notes/v1.4.1.md](release-notes/v1.4.1.md).
+  - **Unlock puts you back where you were:** the section (group, type, favourites, trash, Health), search, sort and
+    selected item, when the same vault unlocks. Kept in memory only, so a restart still opens on All items.
 - **v1.4.0** (2026-10-25): nested groups; auto-type presses Enter by default. Notes: [release-notes/v1.4.0.md](release-notes/v1.4.0.md).
   - **Auto-type presses Enter by default** (`{USERNAME}{TAB}{PASSWORD}{ENTER}`). Settings that still hold 1.3.0's default
     move to the new one.

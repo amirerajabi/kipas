@@ -13,11 +13,12 @@ export type Filter =
   | { kind: 'health'; id: HealthIssue };
 
 export type SortKey = 'title' | 'username' | 'modified' | 'created';
+export type ListSort = { key: SortKey; dir: 1 | -1 };
 
 interface ListState {
   filter: Filter;
   query: string;
-  sort: { key: SortKey; dir: 1 | -1 };
+  sort: ListSort;
   selected: string[];
   /** The row a Shift+click or Shift+arrow range starts from. */
   anchor: string | null;
