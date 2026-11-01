@@ -2,6 +2,13 @@
 
 ## Released
 
+- **v1.5.0** (2026-11-01): start with Windows. Notes: [release-notes/v1.5.0.md](release-notes/v1.5.0.md).
+  - **Start Kipas when Windows starts:** an opt-in switch in Settings → General for the packaged Windows app. Opens
+    at sign-in with the vault locked; reads Windows' actual setting, including a disable in Task Manager. Development
+    builds, macOS and the browser cannot register themselves for startup.
+  - Checked in a packaged Windows build with a throwaway profile: enable/disable, a quoted executable path containing
+    spaces, persistence across restart, an external Windows disable and re-enable, malformed IPC rejection, and light/dark
+    Settings screenshots. Seven automated startup tests. A real Windows sign-out/sign-in was not performed.
 - **v1.4.1** (2026-10-26): unlock returns to where you were. Notes: [release-notes/v1.4.1.md](release-notes/v1.4.1.md).
   - **Unlock puts you back where you were:** the section (group, type, favourites, trash, Health), search, sort and
     selected item, when the same vault unlocks. Kept in memory only, so a restart still opens on All items.

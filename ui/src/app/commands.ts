@@ -34,6 +34,7 @@ import {
 import { getPlatform } from '../platform';
 import { useList, visibleEntries } from '../store/list';
 import { useSettings } from '../store/settings';
+import { useStartup } from '../store/startup';
 import { useUi } from '../store/ui';
 import { useUpdates } from '../store/updates';
 import { useVault } from '../store/vault';
@@ -212,6 +213,13 @@ export const COMMANDS: Command[] = [
   { id: 'view.toggleDetails', label: 'Toggle details pane', icon: PanelRight, shortcut: 'Mod+J', run: () => useUi.getState().setLayout({ detailsVisible: !useUi.getState().detailsVisible }) },
   { id: 'view.toggleTheme', label: 'Switch theme (system / dark / light)', icon: SunMoon, run: toggleTheme },
   { id: 'view.settings', label: 'Settings…', icon: Settings, shortcut: 'Mod+,', run: () => useUi.getState().set({ settingsOpen: 'general' }) },
+  {
+    id: 'app.toggleStartup',
+    label: 'Start Kipas when Windows starts',
+    palette: false,
+    disabled: () => useStartup.getState().busy || !useStartup.getState().status?.available ? 'Startup settings are unavailable' : null,
+    run: () => useStartup.getState().toggle(),
+  },
   {
     id: 'app.checkUpdates',
     label: 'Check for updates',

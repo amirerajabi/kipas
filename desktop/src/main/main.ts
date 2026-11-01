@@ -9,6 +9,7 @@ import { CH } from '../shared/channels';
 import { checkSteps, runAutoType } from './autotype';
 import { checkVaultPath, readVault, statVault, VAULT_EXT, writeVault } from './files';
 import { QuickAccess } from './quick';
+import { startupSettings } from './startup';
 import { Updater } from './updater';
 import { createMainWindow, DARK, LIGHT, titleBarKind } from './window';
 
@@ -113,6 +114,15 @@ function wipeClipboard(): void {
 }
 
 function installIpc(): void {
+  const startup = startupSettings(app, process.platform, process.execPath);
+  ipcMain.handle(CH.startupGet, (e) => {
+    if (e.sender !== win?.webContents) throw new Error('Only the main window can read startup settings.');
+    return startup.get();
+  });
+  ipcMain.handle(CH.startupSet, (e, on: unknown) => {
+    if (e.sender !== win?.webContents) throw new Error('Only the main window can change startup settings.');
+    return startup.set(on);
+  });
   ipcMain.on(CH.setTheme, (_e, theme: unknown, colors: { bg?: unknown; fg?: unknown }) => {
     nativeTheme.themeSource = theme === 'dark' ? 'dark' : 'light';
     if (titleBarKind() !== 'overlay' || !win) return;

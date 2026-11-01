@@ -1,10 +1,11 @@
 import { Database, Download, FileLock2, FolderOpen, Info, KeyRound, LoaderCircle, Lock, RefreshCw, Settings, ShieldCheck, SlidersHorizontal, Upload } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { exportToCsv, importFromCsv } from '../../app/actions';
 import { runCommand } from '../../app/commands';
 import { formatDate } from '../../lib/format';
 import { getPlatform } from '../../platform';
 import { useSettings, type Settings as SettingsT } from '../../store/settings';
+import { useStartup } from '../../store/startup';
 import { useUi, type SettingsSection } from '../../store/ui';
 import { useUpdates } from '../../store/updates';
 import { useVault } from '../../store/vault';
@@ -49,10 +50,10 @@ export function SettingsDialog() {
   );
 }
 
-function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: ReactNode }) {
+function Toggle({ checked, onChange, label, hint, disabled = false }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: ReactNode; disabled?: boolean }) {
   return (
     <label className="toggle-row">
-      <input type="checkbox" className="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" className="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span>
         <span className="toggle-label">{label}</span>
         {hint && <span className="field-hint">{hint}</span>}
@@ -67,8 +68,25 @@ function useS(): [SettingsT, (p: Partial<SettingsT>) => void] {
 
 function General() {
   const [s, save] = useS();
+  const startup = useStartup();
+  useEffect(() => {
+    const refresh = () => void useStartup.getState().refresh();
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
   return (
     <>
+      <div className="settings-section">
+        <h3>Startup</h3>
+        <Toggle
+          checked={startup.status?.enabled ?? false}
+          disabled={startup.busy || !startup.status?.available}
+          onChange={() => runCommand('app.toggleStartup')}
+          label="Start Kipas when Windows starts"
+          hint={startup.error ?? startup.status?.message ?? 'Open Kipas when you sign in to Windows. Your vault stays locked until you unlock it.'}
+        />
+      </div>
       <div className="settings-section">
         <h3>Appearance</h3>
         <Field label="Theme">

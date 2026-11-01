@@ -13,6 +13,13 @@ export interface VaultFileInfo {
 /** Things the OS tells the UI so it can lock: the session locked, the machine went to sleep, the window minimized. */
 export type SystemEvent = 'lock-screen' | 'suspend' | 'minimize';
 
+/** Windows owns this preference; it is never replayed from renderer settings. */
+export interface StartupStatus {
+  available: boolean;
+  enabled: boolean;
+  message?: string;
+}
+
 /** install: download in the background and restart into it; notify: link to the release (unsigned macOS). */
 export type UpdateMode = 'install' | 'notify' | 'disabled';
 

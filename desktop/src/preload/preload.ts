@@ -1,7 +1,7 @@
 // Preload (sandboxed): exposes `window.kipas`, the only bridge between the UI and Electron. Every value is coerced to the
 // type main expects; main validates again.
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AutoTypeResult, AutoTypeStep, QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus } from '../../../shared/protocol';
+import type { AutoTypeResult, AutoTypeStep, QuickAction, QuickAnswer, QuickRequest, StartupStatus, SystemEvent, TextFileFilter, UpdateStatus } from '../../../shared/protocol';
 import { ARG, CH } from '../shared/channels';
 
 function arg(prefix: string): string {
@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('kipas', {
   checkForUpdates: () => ipcRenderer.invoke(CH.updateCheck),
   installUpdate: (): Promise<boolean> => ipcRenderer.invoke(CH.updateInstall),
   setAutoUpdate: (on: boolean) => ipcRenderer.send(CH.setAutoUpdate, !!on),
+  getStartupStatus: (): Promise<StartupStatus> => ipcRenderer.invoke(CH.startupGet),
+  setStartAtLogin: (on: boolean): Promise<StartupStatus> => ipcRenderer.invoke(CH.startupSet, on),
   onUpdateStatus: (cb: (status: UpdateStatus) => void) => subscribe<UpdateStatus>(CH.updateStatus, cb),
   autoType: (steps: AutoTypeStep[]): Promise<AutoTypeResult> => ipcRenderer.invoke(CH.autoType, steps),
   isQuickWindow: process.argv.includes(ARG.quick),

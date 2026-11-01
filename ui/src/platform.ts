@@ -1,4 +1,4 @@
-import type { AutoTypeResult, AutoTypeStep, QuickAction, QuickAnswer, QuickRequest, SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
+import type { AutoTypeResult, AutoTypeStep, QuickAction, QuickAnswer, QuickRequest, StartupStatus, SystemEvent, TextFileFilter, UpdateStatus, VaultFileInfo } from '../../shared/protocol';
 
 /**
  * What the UI needs from its host. In Electron the preload script exposes `window.kipas`; in a plain browser
@@ -34,6 +34,8 @@ export interface DesktopBridge {
   /** Restart into a downloaded update; false when there is none. */
   installUpdate(): Promise<boolean>;
   setAutoUpdate(on: boolean): void;
+  getStartupStatus(): Promise<StartupStatus>;
+  setStartAtLogin(on: boolean): Promise<StartupStatus>;
   onUpdateStatus(cb: (status: UpdateStatus) => void): () => void;
   /** Type the steps into the window the user came from (Kipas steps aside first). */
   autoType(steps: AutoTypeStep[]): Promise<AutoTypeResult>;
@@ -161,6 +163,8 @@ function browserPlatform(): Platform {
     checkForUpdates: async () => null,
     installUpdate: async () => false,
     setAutoUpdate: noop,
+    getStartupStatus: async () => ({ available: false, enabled: false, message: 'Available in the Windows desktop app.' }),
+    setStartAtLogin: async () => ({ available: false, enabled: false, message: 'Available in the Windows desktop app.' }),
     onUpdateStatus: () => noop,
     autoType: async () => 'unsupported',
     isQuickWindow: false,
